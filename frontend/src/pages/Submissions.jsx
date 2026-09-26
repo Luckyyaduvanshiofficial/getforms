@@ -501,14 +501,22 @@ export default function Submissions() {
           ))}
         </div>
       ) : submissions.length === 0 ? (
-        <Card>
-          <CardContent className="py-16 text-center">
-            <p className="text-muted-foreground font-medium">No submissions found</p>
-            <p className="text-sm text-muted-foreground mt-1">
+        <Card className="bezel-card border-dashed">
+          <CardContent className="py-16 text-center max-w-md mx-auto">
+            <div className="w-12 h-12 rounded-xl bg-muted/60 border border-border flex items-center justify-center mx-auto mb-3">
+              <Archive className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <p className="text-base font-semibold text-foreground">No submissions found</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-5">
               {statusFilter !== "all" || formFilter !== "all"
-                ? "Try changing the filters above"
-                : "Submissions will appear here once your forms receive data"}
+                ? "Try adjusting the filters above to view more entries."
+                : "Your forms are live and ready. Submissions will appear here the moment a visitor fills out your form."}
             </p>
+            <div className="flex justify-center gap-3">
+              <Button asChild size="sm">
+                <Link to="/forms">View Active Forms</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
