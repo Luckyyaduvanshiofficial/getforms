@@ -6,6 +6,9 @@
     handle /f/* {
         reverse_proxy backend:3001
     }
+    handle /uploads/* {
+        reverse_proxy backend:3001
+    }
     handle /health {
         reverse_proxy backend:3001
     }

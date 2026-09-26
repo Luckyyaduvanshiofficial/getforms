@@ -2,16 +2,16 @@ services:
   postgres:
     image: postgres:16.4-alpine
     restart: unless-stopped
-    env_file: formto.env
+    env_file: .env
     environment:
-      POSTGRES_DB: formto
-      POSTGRES_USER: formto
-      # POSTGRES_PASSWORD is read from formto.env
+      POSTGRES_DB: getforms
+      POSTGRES_USER: getforms
+      # POSTGRES_PASSWORD is read from .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U formto"]
+      test: ["CMD-SHELL", "pg_isready -U getforms"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -19,16 +19,19 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    env_file: formto.env
+    env_file: .env
     environment:
       PORT: 3001
       HOST: 0.0.0.0
       NODE_ENV: production
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: formto
-      DB_USER: formto
-      # DB password + JWT_SECRET + SMTP_* come from formto.env
+      DB_NAME: getforms
+      DB_USER: getforms
+      # DB password + JWT_SECRET + SMTP_* come from .env
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,7 +54,7 @@ services:
   caddy:
     image: caddy:2.8-alpine
     restart: unless-stopped
-    env_file: formto.env
+    env_file: .env
     ports:
       - "80:80"
       - "443:443"
