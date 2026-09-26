@@ -40,7 +40,7 @@ export async function sendTelegramNotification(botToken, chatId, { formName, sub
     '',
     fields || '_\\(no fields\\)_',
     '',
-    '— FormTo'
+    '— GetForms'
   ].join('\n');
 
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;

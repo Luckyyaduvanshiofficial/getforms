@@ -34,7 +34,7 @@ export async function sendSlackNotification(webhookUrl, { formName, submissionDa
         type: 'context',
         elements: [{
           type: 'mrkdwn',
-          text: `<!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}> · FormTo`
+          text: `<!date^${Math.floor(Date.now() / 1000)}^{date_short_pretty} at {time}|${new Date().toISOString()}> · GetForms`
         }]
       }
     ]

@@ -1,4 +1,4 @@
--- FormTo Open Source — Database Schema
+-- GetForms Open Source — Database Schema
 -- PostgreSQL 14+
 -- Run once on a fresh database (auto-applied by Docker Compose via initdb.d)
 

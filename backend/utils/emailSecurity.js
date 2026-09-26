@@ -4,7 +4,7 @@
 
 import validator from 'validator';
 
-const DEFAULT_FROM_EMAIL = process.env.FROM_EMAIL || process.env.DEFAULT_FROM_EMAIL || 'FormTo <noreply@localhost>';
+const DEFAULT_FROM_EMAIL = process.env.FROM_EMAIL || process.env.DEFAULT_FROM_EMAIL || 'GetForms <noreply@localhost>';
 const MAX_NOTIFICATION_RECIPIENTS = 5;
 const MAX_EMAIL_SUBJECT_LENGTH = 200;
 const MAX_DISPLAY_NAME_LENGTH = 100;

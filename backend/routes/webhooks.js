@@ -36,13 +36,13 @@ export default async function webhookRoutes(fastify) {
       const testPayload = payload || {
         event: 'webhook.test',
         timestamp: new Date().toISOString(),
-        message: 'This is a test webhook from FormTo'
+        message: 'This is a test webhook from GetForms'
       };
 
       const startedAt = Date.now();
       const response = await sendPinnedWebhookRequest(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'FormTo-Webhook/1.0', 'X-FormTo-Event': 'webhook.test' },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'GetForms-Webhook/2.0', 'X-GetForms-Event': 'webhook.test' },
         body: JSON.stringify(testPayload),
         timeoutMs: 10000
       });
@@ -114,7 +114,7 @@ export default async function webhookRoutes(fastify) {
 
       const response = await sendPinnedWebhookRequest(log.webhook_url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'User-Agent': 'FormTo-Webhook/1.0', 'X-FormTo-Retry': 'true' },
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'GetForms-Webhook/2.0', 'X-GetForms-Retry': 'true' },
         body: JSON.stringify(log.payload),
         timeoutMs: 10000
       });

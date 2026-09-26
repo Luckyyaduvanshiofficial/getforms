@@ -40,7 +40,7 @@ export function getTransportForUser(smtpConfig) {
 }
 
 export function getFromForUser(smtpConfig) {
-  return smtpConfig?.from || process.env.FROM_EMAIL || 'FormTo <noreply@localhost>';
+  return smtpConfig?.from || process.env.FROM_EMAIL || 'GetForms <noreply@localhost>';
 }
 
 // ─── Template helpers ─────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ function generateDefaultEmailTemplate(formName, submissionData) {
       <h3>Submission Details:</h3>
       ${fields}
       <hr style="border: 1px solid #e5e7eb; margin: 20px 0;" />
-      <p style="color: #6b7280; font-size: 12px;">Powered by FormTo</p>
+      <p style="color: #6b7280; font-size: 12px;">Powered by GetForms</p>
     </div>
   `;
 }
@@ -156,7 +156,7 @@ export const emailHelpers = {
     const info = await transport.sendMail({
       from:    sender,
       to:      Array.isArray(to) ? to : [to],
-      subject: subject || 'Notification from FormTo',
+      subject: subject || 'Notification from GetForms',
       html,
       ...(replyTo ? { replyTo } : {})
     });

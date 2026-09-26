@@ -96,8 +96,8 @@ export default async function authRoutes(fastify) {
       await transport.sendMail({
         from,
         to,
-        subject: 'FormTo — test email',
-        html: '<p>This is a test email from <strong>FormTo</strong>. Your email notifications are working correctly.</p>'
+        subject: 'GetForms — Test Email',
+        html: '<p>This is a test email from <strong>GetForms</strong>. Your email notifications are working correctly.</p>'
       });
       return { success: true };
     } catch (err) {
