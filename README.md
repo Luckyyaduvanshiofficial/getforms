@@ -1,14 +1,39 @@
+<div align="center">
+
 # ⚡ GetForms — Modern Open-Source Form Backend & Form-to-Email Service
 
-> **The lightweight, high-performance, self-hosted alternative to Formspree, Formcarry, and Basin.**  
-> Add one `action` attribute to any HTML form and start collecting submissions instantly. No server-side code needed.
+**The lightweight, high-performance, developer-first alternative to Formspree, Basin, FormBee, and Formcarry.**  
+*Add one action attribute to any HTML form and receive instant submissions. Free self-hosted & free managed cloud.*
 
-[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Author: Lucky Yaduvanshi](https://img.shields.io/badge/Author-Lucky_Yaduvanshi-indigo.svg)](https://github.com/Luckyyaduvanshiofficial)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=node.js&logoColor=white)](#)
-[![Fastify](https://img.shields.io/badge/Fastify-v5-000000?logo=fastify&logoColor=white)](#)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](#)
-[![SQLite / PostgreSQL](https://img.shields.io/badge/Database-SQLite%20%7C%20Postgres-4169E1?logo=postgresql&logoColor=white)](#)
+[![Free Cloud Managed Service](https://img.shields.io/badge/Free_Cloud-getforms.codaipro.com-10b981?style=for-the-badge&logo=cloudflare&logoColor=white)](https://getforms.codaipro.com)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-3b82f6.svg?style=for-the-badge)](./LICENSE)
+[![Author: Lucky Yaduvanshi](https://img.shields.io/badge/Author-Lucky_Yaduvanshi-6366f1.svg?style=for-the-badge)](https://github.com/Luckyyaduvanshiofficial)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-22c55e?style=for-the-badge&logo=node.js&logoColor=white)](#)
+[![Fastify](https://img.shields.io/badge/Fastify-v5-000000?style=for-the-badge&logo=fastify&logoColor=white)](#)
+[![React](https://img.shields.io/badge/React-19-06b6d4?style=for-the-badge&logo=react&logoColor=white)](#)
+[![SQLite / PostgreSQL](https://img.shields.io/badge/Database-SQLite%20%7C%20Postgres-8b5cf6?style=for-the-badge&logo=postgresql&logoColor=white)](#)
+
+<br/>
+
+> 🌐 **Don't want to host it yourself?** Use our **100% Free Managed Cloud Service** at **[getforms.codaipro.com](https://getforms.codaipro.com)**!  
+> No credit card required, zero server maintenance, instant setup, and full dashboard access.
+
+</div>
+
+---
+
+## ☁️ Free Cloud vs. Self-Hosted: You Choose!
+
+| Feature / Benefit | 🌐 **GetForms Free Cloud** (`getforms.codaipro.com`) | 💻 **GetForms Self-Hosted** |
+| :--- | :--- | :--- |
+| **Best For** | Developers, agencies, and founders who want an instant solution without server management | Teams requiring 100% data sovereignty, custom intranets, or air-gapped setups |
+| **Setup Time** | **< 30 seconds** (Just sign up and copy your form endpoint) | **< 2 minutes** (`git clone` & `npm start` with embedded SQLite) |
+| **Pricing** | **100% FREE** — No subscriptions, no hidden limits, no credit card required | **100% FREE** — Unlimited forever on your own hardware |
+| **Server Maintenance** | **Zero maintenance** — Managed, upgraded, and backed up for you | Single Docker container or lightweight Node.js process |
+| **Access URL** | **[https://getforms.codaipro.com](https://getforms.codaipro.com)** | Runs on `http://localhost:3001` or your custom domain |
+| **Custom Slugs** | Supported (`/f/contact-sales`, `/f/newsletter`) | Supported (`/f/contact-sales`, `/f/newsletter`) |
+| **Spam Protection** | Cloudflare Turnstile, Altcha PoW, Honeypot, Google reCAPTCHA | Cloudflare Turnstile, Altcha PoW, Honeypot, Google reCAPTCHA |
+| **Multi-Channel Alerts**| Email (SMTP/Resend), Discord, Telegram, Slack, Webhooks | Email (SMTP/Resend), Discord, Telegram, Slack, Webhooks |
 
 ---
 
