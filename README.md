@@ -295,6 +295,150 @@ For Astro components, Svelte, or Vue 3:
 
 ---
 
+## 🛡️ Anti-Spam & Advanced Features
+
+### 1. Invisible Honeypot (Zero Friction for Users)
+
+Block automated spam bots with zero impact on human visitors. Add a hidden input field named `_gotcha`:
+
+```html
+<form action="https://getforms.codaipro.com/f/your-form-slug" method="POST">
+  <!-- Bot honeypot: hidden from real humans via CSS -->
+  <div style="display:none;" aria-hidden="true">
+    <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" />
+  </div>
+
+  <input type="text" name="name" placeholder="Your Name" required />
+  <button type="submit">Submit</button>
+</form>
+```
+*If a spambot automatically fills this field, GetForms silently flags and drops the submission.*
+
+---
+
+### 2. Cloudflare Turnstile Integration
+
+Cloudflare Turnstile delivers invisible, frictionless CAPTCHA without tracking cookies:
+
+1. Enable **Cloudflare Turnstile** in your form's Advanced Settings tab in GetForms and enter your Secret Key.
+2. In your HTML, add the Turnstile script and widget:
+
+```html
+<!-- Load Cloudflare Turnstile script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<form action="https://getforms.codaipro.com/f/your-form-slug" method="POST">
+  <input type="text" name="name" placeholder="Your Name" required />
+  
+  <!-- Turnstile widget -->
+  <div class="cf-turnstile" data-sitekey="YOUR_CLOUDFLARE_SITEKEY"></div>
+
+  <button type="submit">Send</button>
+</form>
+```
+
+---
+
+### 3. Altcha Proof-of-Work (GDPR Compliant & Cookie-Free)
+
+Altcha uses a cryptographic proof-of-work challenge processed entirely on the visitor's device:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/altcha/dist/altcha.min.js"></script>
+
+<form action="https://getforms.codaipro.com/f/your-form-slug" method="POST">
+  <input type="email" name="email" placeholder="Your Email" required />
+  
+  <!-- Altcha PoW widget -->
+  <altcha-widget challengeurl="https://getforms.codaipro.com/api/altcha-challenge"></altcha-widget>
+
+  <button type="submit">Subscribe</button>
+</form>
+```
+
+---
+
+### 4. Multipart File Uploads
+
+Collect resumes, PDF reports, screenshots, or receipts directly through your forms:
+
+```html
+<form 
+  action="https://getforms.codaipro.com/f/your-form-slug" 
+  method="POST" 
+  enctype="multipart/form-data"
+>
+  <input type="text" name="applicant_name" placeholder="Full Name" required />
+  <input type="email" name="applicant_email" placeholder="Email" required />
+
+  <!-- File input: supports images, PDFs, documents up to configured size limit -->
+  <label for="resume">Upload Resume (PDF, DOCX up to 10MB):</label>
+  <input type="file" id="resume" name="resume" accept=".pdf,.doc,.docx" required />
+
+  <button type="submit">Submit Application</button>
+</form>
+```
+
+*Uploaded files are securely hashed, stored with MIME verification, and accessible directly in your GetForms submission inbox.*
+
+---
+
+### 5. Webhooks & HMAC-SHA256 Signature Verification
+
+Every submission can trigger an instant JSON HTTP POST to your external API, Zapier, or microservice.
+
+#### Webhook Payload Schema:
+```json
+{
+  "event": "form_submission",
+  "form_id": "frm_abc123",
+  "endpoint": "contact-sales",
+  "submission_id": "sub_xyz789",
+  "created_at": "2026-09-26T12:00:00.000Z",
+  "data": {
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "message": "Looking for an enterprise quote"
+  },
+  "files": []
+}
+```
+
+#### Verifying Webhook Signatures (Node.js):
+If a Webhook Secret is configured, GetForms computes an HMAC signature and passes it in the `X-GetForms-Signature` header:
+
+```javascript
+import crypto from "node:crypto";
+
+function verifyGetFormsWebhook(rawBody, signatureHeader, secret) {
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signatureHeader),
+    Buffer.from(expectedSignature)
+  );
+}
+```
+
+---
+
+### 6. Special Reserved Parameters
+
+Customize form behavior using these built-in query or input parameters:
+
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `_next` | Hidden Input / Param | Redirects user to a custom URL upon successful submission (e.g. `/thank-you`). |
+| `_subject` | Hidden Input / Param | Customizes the email notification subject line (e.g. `New Sales Lead from {{name}}`). |
+| `_replyto` / `email` | Input | Automatically sets the `Reply-To` header in email alerts so you can hit "Reply" in your inbox. |
+| `_gotcha` | Hidden Input | Anti-spam honeypot field. Must be left blank by legitimate humans. |
+| `_optin` | Hidden Input | Triggers double opt-in verification flow for newsletter or waitlist signups. |
+
+---
+
 ## 🏁 Quick Start
 
 ### 1. Requirements
