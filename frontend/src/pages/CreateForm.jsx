@@ -243,7 +243,7 @@ export default function CreateForm() {
       }
 
       const response = await formsApi.create(payload)
-      const newForm = response.data
+      const newForm = response?.data?.form || response?.data
       if (!newForm?.id) {
         throw new Error("Failed to create form")
       }

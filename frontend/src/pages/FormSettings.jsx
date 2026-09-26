@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
-import { ArrowLeft, Save, Loader2, Mail, Slack, Send, Plus, X } from "lucide-react"
+import { ArrowLeft, Save, Loader2, Mail, Slack, Send, Plus, X, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,6 +38,7 @@ export default function FormSettings() {
     notify_email: false,
     notify_telegram: false,
     notify_slack: false,
+    notify_discord: false,
   })
 
   useEffect(() => {
@@ -77,6 +78,7 @@ export default function FormSettings() {
           notify_email: formData.notify_email || false,
           notify_telegram: formData.notify_telegram || false,
           notify_slack: formData.notify_slack || false,
+          notify_discord: formData.notify_discord || false,
         })
       } catch (err) {
         console.error("Failed to fetch form:", err)
@@ -191,6 +193,7 @@ export default function FormSettings() {
         notify_email: formData.notify_email,
         notify_telegram: formData.notify_telegram,
         notify_slack: formData.notify_slack,
+        notify_discord: formData.notify_discord,
       }
 
       await formsApi.update(id, updateData)
@@ -435,6 +438,23 @@ export default function FormSettings() {
               <Switch
                 checked={!!formData.notify_slack}
                 onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, notify_slack: checked }))}
+                disabled={saving}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Discord</p>
+                  <p className="text-xs text-muted-foreground">Send a Discord webhook embed for each new submission</p>
+                </div>
+              </div>
+              <Switch
+                checked={!!formData.notify_discord}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, notify_discord: checked }))}
                 disabled={saving}
               />
             </div>
