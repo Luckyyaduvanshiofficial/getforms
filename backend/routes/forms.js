@@ -178,7 +178,7 @@ export default async function formRoutes(fastify) {
   fastify.post('/', { preHandler: fastify.auth }, async (request, reply) => {
     try {
       const {
-        name, endpoint, description, redirect_url,
+        name, endpoint, custom_slug, slug, description, redirect_url,
         notification_email, notification_emails, email_config,
         webhook_url, slack_webhook_url, discord_webhook_url,
         active = true,
@@ -204,10 +204,10 @@ export default async function formRoutes(fastify) {
         return reply.status(400).send({ error: 'Form name is required' });
       }
 
-      let rawEndpoint = endpoint;
+      let rawEndpoint = endpoint || custom_slug || slug;
       if (!rawEndpoint || typeof rawEndpoint !== 'string' || !rawEndpoint.trim()) {
-        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'form';
-        rawEndpoint = `${slug}-${crypto.randomUUID().slice(0, 8)}`;
+        const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'form';
+        rawEndpoint = `${generatedSlug}-${crypto.randomUUID().slice(0, 8)}`;
       }
 
       const endpointVal = validateFormEndpoint(rawEndpoint);
