@@ -18,7 +18,7 @@ export async function sendDiscordNotification(webhookUrl, { formName, endpoint, 
     }));
 
   const payload = {
-    username: 'GetForm Notifications',
+    username: 'GetForms Notifications',
     embeds: [
       {
         title: `📥 New Submission: ${formName || endpoint}`,
@@ -26,7 +26,7 @@ export async function sendDiscordNotification(webhookUrl, { formName, endpoint, 
         color: 0x3b82f6, // Blue
         fields: fields.length > 0 ? fields : [{ name: 'Submission', value: 'Empty submission payload' }],
         footer: {
-          text: `IP: ${metadata?.ip || 'unknown'} • GetForm Open Source`
+          text: `IP: ${metadata?.ip || 'unknown'} • GetForms Open Source`
         },
         timestamp: new Date().toISOString()
       }

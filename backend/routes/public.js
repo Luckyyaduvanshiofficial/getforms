@@ -88,13 +88,13 @@ function renderHostedForm(form, req) {
 
   const redirectScript = form.redirect_url
     ? `window.location.href = ${JSON.stringify(form.redirect_url)};`
-    : `document.getElementById('ft-form').innerHTML = '<div style="text-align:center;padding:24px 0;"><div style="width:48px;height:48px;background:#dcfce7;color:#16a34a;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;">✓</div><h3 style="margin:0 0 8px;font-size:18px;color:#111827;">Thank You!</h3><p style="color:#6b7280;margin:0;font-size:14px;">Your submission has been received.</p></div>';`;
+    : `document.getElementById('getforms-container').innerHTML = '<div style="text-align:center;padding:24px 0;"><div style="width:48px;height:48px;background:#dcfce7;color:#16a34a;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px;">✓</div><h3 style="margin:0 0 8px;font-size:18px;color:#111827;">Thank You!</h3><p style="color:#6b7280;margin:0;font-size:14px;">Your submission has been received.</p></div>';`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${formName} — GetForm</title>
+<title>${formName} — GetForms</title>
 <style>
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#f3f4f6;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px 16px;box-sizing:border-box;}
   .card{background:#ffffff;padding:36px;border-radius:16px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.05),0 8px 10px -6px rgba(0,0,0,0.01);width:100%;max-width:500px;box-sizing:border-box;}
@@ -107,8 +107,8 @@ function renderHostedForm(form, req) {
     <h1 style="font-size:22px;font-weight:700;color:#111827;margin:0;">${formName}</h1>
   </div>
   ${description}
-  <div id="ft-form">
-    <form id="ft-inner" method="POST" action="/f/${endpoint}" ${form.file_uploads_enabled ? 'enctype="multipart/form-data"' : ''}>
+  <div id="getforms-container">
+    <form id="getforms-form" method="POST" action="/f/${endpoint}" ${form.file_uploads_enabled ? 'enctype="multipart/form-data"' : ''}>
       ${fieldsHtml}
       ${fileUploadHtml}
       ${turnstileScript}
@@ -123,11 +123,11 @@ function renderHostedForm(form, req) {
     </form>
   </div>
   <div style="margin-top:24px;text-align:center;">
-    <a href="https://github.com/LuckyLabs/getform" target="_blank" style="color:#9ca3af;font-size:12px;text-decoration:none;">Powered by <strong>GetForm OSS</strong></a>
+    <a href="https://github.com/Luckyyaduvanshiofficial/getforms" target="_blank" style="color:#9ca3af;font-size:12px;text-decoration:none;">Powered by <strong>GetForms Open Source</strong></a>
   </div>
 </div>
 <script>
-document.getElementById('ft-inner').addEventListener('submit', async function(e) {
+document.getElementById('getforms-form').addEventListener('submit', async function(e) {
   // If file upload is present, allow standard form submission or handle via fetch FormData
   e.preventDefault();
   const btn = this.querySelector('button[type=submit]');

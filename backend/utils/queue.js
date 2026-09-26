@@ -200,7 +200,7 @@ async function handleAutoReply(payload) {
     secure: process.env.SMTP_SECURE === 'true',
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
-    from: process.env.FROM_EMAIL || 'GetForm <noreply@example.com>'
+    from: process.env.FROM_EMAIL || 'GetForms <noreply@example.com>'
   };
 
   const transporter = nodemailer.createTransport({
@@ -231,7 +231,7 @@ async function handleDoubleOptIn(payload) {
     secure: process.env.SMTP_SECURE === 'true',
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
-    from: process.env.FROM_EMAIL || 'GetForm <noreply@example.com>'
+    from: process.env.FROM_EMAIL || 'GetForms <noreply@example.com>'
   };
 
   const transporter = nodemailer.createTransport({

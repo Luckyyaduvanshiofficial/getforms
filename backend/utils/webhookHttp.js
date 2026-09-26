@@ -137,8 +137,9 @@ export async function deliverWebhook(form, submissionData, metadata) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'GetForm-Webhook/2.0',
-        'X-GetForm-Event': 'form.submission',
+        'User-Agent': 'GetForms-Webhook/2.0',
+        'X-GetForms-Event': 'form.submission',
+        'X-GetForms-Signature': signature,
         'X-GetForm-Signature': signature
       },
       body: JSON.stringify(payload),
