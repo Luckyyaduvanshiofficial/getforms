@@ -181,7 +181,23 @@ export default async function formRoutes(fastify) {
         name, endpoint, description, redirect_url,
         notification_email, notification_emails, email_config,
         webhook_url, slack_webhook_url, discord_webhook_url,
-        active = true
+        active = true,
+        tags = [],
+        notify_email = false,
+        notify_telegram = false,
+        notify_slack = false,
+        notify_discord = false,
+        auto_reply_enabled = false,
+        auto_reply_subject = null,
+        auto_reply_body = null,
+        spam_engine = 'honeypot',
+        turnstile_secret_key = null,
+        recaptcha_secret_key = null,
+        altcha_secret_key = null,
+        allowed_domains = ['*'],
+        file_uploads_enabled = false,
+        max_file_size_mb = 10,
+        allowed_file_types = []
       } = request.body || {};
 
       if (!name || typeof name !== 'string' || !name.trim()) {
@@ -223,9 +239,17 @@ export default async function formRoutes(fastify) {
 
       const formId = crypto.randomUUID();
       const [form] = await sql.unsafe(
-        `INSERT INTO forms (id, user_id, name, endpoint, description, notification_email, redirect_url, email_config, webhook_url, slack_webhook_url, discord_webhook_url, active, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW())
-         RETURNING ${SAFE_FORM_COLS}`,
+        `INSERT INTO forms (
+          id, user_id, name, endpoint, description, notification_email, redirect_url, email_config,
+          webhook_url, slack_webhook_url, discord_webhook_url, active, tags,
+          notify_email, notify_telegram, notify_slack, notify_discord,
+          auto_reply_enabled, auto_reply_subject, auto_reply_body,
+          spam_engine, turnstile_secret_key, recaptcha_secret_key, altcha_secret_key,
+          allowed_domains, file_uploads_enabled, max_file_size_mb, allowed_file_types,
+          created_at, updated_at
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,NOW(),NOW())
+        RETURNING ${SAFE_FORM_COLS}`,
         [
           formId,
           request.user.userId,
@@ -238,7 +262,23 @@ export default async function formRoutes(fastify) {
           webhook_url || null,
           slack_webhook_url || null,
           discord_webhook_url || null,
-          active
+          Boolean(active),
+          JSON.stringify(Array.isArray(tags) ? tags : []),
+          Boolean(notify_email),
+          Boolean(notify_telegram),
+          Boolean(notify_slack),
+          Boolean(notify_discord),
+          Boolean(auto_reply_enabled),
+          auto_reply_subject || null,
+          auto_reply_body || null,
+          spam_engine || 'honeypot',
+          turnstile_secret_key || null,
+          recaptcha_secret_key || null,
+          altcha_secret_key || null,
+          JSON.stringify(Array.isArray(allowed_domains) ? allowed_domains : ['*']),
+          Boolean(file_uploads_enabled),
+          parseInt(max_file_size_mb, 10) || 10,
+          JSON.stringify(Array.isArray(allowed_file_types) ? allowed_file_types : []),
         ]
       );
 
