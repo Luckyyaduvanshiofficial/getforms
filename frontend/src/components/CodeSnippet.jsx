@@ -3,10 +3,11 @@
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
 import { useState } from "react"
-import { Copy, Check } from "lucide-react"
+import { Copy, Check, Send, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "@/hooks/use-toast"
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 
@@ -132,9 +133,10 @@ const getFileUploadSnippet = (endpoint) => `<form action="${BASE_URL}/f/${endpoi
   Max file size configured via MAX_FILE_SIZE_MB environment variable (default: 10MB)
 -->`
 
-export default function CodeSnippet({ endpoint }) {
+export default function CodeSnippet({ endpoint, onSubmissionSent }) {
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState("html")
+  const [submittingTest, setSubmittingTest] = useState(false)
 
   const snippets = {
     html: getHtmlSnippet(endpoint),
@@ -150,17 +152,55 @@ export default function CodeSnippet({ endpoint }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleSendTestSubmission = async () => {
+    setSubmittingTest(true)
+    try {
+      const res = await fetch(`${BASE_URL}/f/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _getforms_js: true,
+          name: "Test Submitter",
+          email: "test@example.com",
+          message: "Greetings from the GetForms test submission console! Your endpoint is working perfectly."
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast({
+          title: "Test submission received! 🚀",
+          description: "Live submission recorded into your inbox.",
+        })
+        onSubmissionSent?.()
+      } else {
+        toast({
+          title: "Submission failed",
+          description: data.error || "Could not record submission",
+          variant: "destructive"
+        })
+      }
+    } catch (err) {
+      toast({
+        title: "Network error",
+        description: err.message || "Failed to reach endpoint",
+        variant: "destructive"
+      })
+    } finally {
+      setSubmittingTest(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Integration Code</CardTitle>
         <CardDescription>
-          Copy and paste this code into your website to start collecting submissions
+          Copy and paste this code into your website or send a test payload to verify this endpoint immediately
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <TabsList>
               <TabsTrigger value="html">HTML</TabsTrigger>
               <TabsTrigger value="javascript">JavaScript</TabsTrigger>
@@ -168,19 +208,35 @@ export default function CodeSnippet({ endpoint }) {
               <TabsTrigger value="curl">cURL</TabsTrigger>
               <TabsTrigger value="fileupload">File Upload</TabsTrigger>
             </TabsList>
-            <Button variant="outline" size="sm" onClick={handleCopy}>
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSendTestSubmission}
+                disabled={submittingTest}
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              >
+                {submittingTest ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Send Test Submission
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopy}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-1.5" />
+                    Copy Code
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {Object.entries(snippets).map(([key, code]) => (

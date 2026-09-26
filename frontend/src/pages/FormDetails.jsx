@@ -501,7 +501,18 @@ export default function FormDetails() {
         )}
 
         <TabsContent value="integration">
-          <CodeSnippet endpoint={form.endpoint} />
+          <CodeSnippet
+            endpoint={form.endpoint}
+            onSubmissionSent={() => {
+              fetchSubmissions(1);
+              formsApi.getFormStats(id).then((res) => {
+                if (res?.data) {
+                  const s = res.data;
+                  setStats({ total: s.total || 0, thisWeek: s.this_week || 0, today: s.today || 0 });
+                }
+              }).catch(() => {});
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
