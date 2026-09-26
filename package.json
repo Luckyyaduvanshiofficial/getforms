@@ -1,14 +1,14 @@
 {
   "name": "getforms",
   "version": "2.0.0",
-  "description": "Modern, high-performance, open-source form backend and email service (Formspree & Basin alternative)",
+  "description": "Modern, high-performance, open-source form backend and form-to-email service. Free self-hosted & managed cloud alternative to Formspree, Basin, FormBee, and Formcarry with zero-config SQLite WAL, multi-channel notifications, and modern spam protection.",
   "author": "Lucky Yaduvanshi <https://github.com/Luckyyaduvanshiofficial>",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Luckyyaduvanshiofficial/getforms.git"
   },
-  "homepage": "https://github.com/Luckyyaduvanshiofficial/getforms#readme",
+  "homepage": "https://getforms.codaipro.com",
   "bugs": {
     "url": "https://github.com/Luckyyaduvanshiofficial/getforms/issues"
   },
@@ -24,15 +24,25 @@
   "keywords": [
     "form",
     "form-backend",
+    "form-to-email",
     "formspree-alternative",
+    "basin-alternative",
+    "formcarry-alternative",
+    "formbee-alternative",
+    "contact-form-api",
     "email-service",
     "webhooks",
     "contact-form",
+    "newsletter-backend",
+    "waitlist-api",
     "turnstile",
     "recaptcha",
     "altcha",
     "sqlite-wal",
     "self-hosted",
-    "developer-tools"
+    "developer-tools",
+    "fastify",
+    "react19",
+    "open-source"
   ]
 }

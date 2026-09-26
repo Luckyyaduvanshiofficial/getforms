@@ -1,9 +1,10 @@
 {
   "name": "getforms-backend",
   "version": "2.0.0",
-  "description": "High-performance backend engine for GetForms",
+  "description": "High-performance form ingestion and notification backend engine for GetForms",
   "author": "Lucky Yaduvanshi <https://github.com/Luckyyaduvanshiofficial>",
   "license": "Apache-2.0",
+  "homepage": "https://getforms.codaipro.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/Luckyyaduvanshiofficial/getforms.git",

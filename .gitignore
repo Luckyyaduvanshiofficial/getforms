@@ -28,3 +28,6 @@ frontend/dist/
 *.swp
 .idea/
 .vscode/
+.claude/
+.commandcode/
+.zcode/

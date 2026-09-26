@@ -1,9 +1,10 @@
 {
   "name": "getforms-frontend",
   "version": "2.0.0",
-  "description": "Modern agency-tier React frontend for GetForms",
+  "description": "Modern agency-tier React 19 dashboard and form manager for GetForms",
   "author": "Lucky Yaduvanshi <https://github.com/Luckyyaduvanshiofficial>",
   "license": "Apache-2.0",
+  "homepage": "https://getforms.codaipro.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/Luckyyaduvanshiofficial/getforms.git",
