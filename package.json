@@ -1,0 +1,36 @@
+{
+  "name": "getforms",
+  "version": "2.0.0",
+  "description": "Modern, high-performance, open-source form backend and email service (Formspree & Basin alternative)",
+  "author": "Lucky Yaduvanshi <https://github.com/Luckyyaduvanshiofficial>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Luckyyaduvanshiofficial/getforms.git"
+  },
+  "homepage": "https://github.com/Luckyyaduvanshiofficial/getforms#readme",
+  "bugs": {
+    "url": "https://github.com/Luckyyaduvanshiofficial/getforms/issues"
+  },
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "build": "npm --prefix frontend run build",
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "dev:frontend": "npm --prefix frontend run dev"
+  },
+  "keywords": [
+    "form",
+    "form-backend",
+    "formspree-alternative",
+    "email-service",
+    "webhooks",
+    "contact-form",
+    "turnstile",
+    "recaptcha",
+    "altcha",
+    "sqlite-wal",
+    "self-hosted",
+    "developer-tools"
+  ]
+}

@@ -1,0 +1,30 @@
+# ─── Secrets & Environment ──────────────────────────────────
+.env
+*.env
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# ─── Database & Uploads (Never commit test data) ──────────────
+data/
+backend/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+uploads/
+backend/uploads/
+
+# ─── Dependencies ────────────────────────────────────────────
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# ─── Build output ────────────────────────────────────────────
+frontend/dist/
+
+# ─── OS / editor ─────────────────────────────────────────────
+.DS_Store
+*.swp
+.idea/
+.vscode/
