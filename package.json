@@ -15,6 +15,7 @@
   "scripts": {
     "install:all": "npm --prefix backend install && npm --prefix frontend install",
     "build": "npm --prefix frontend run build",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test",
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "dev:frontend": "npm --prefix frontend run dev",

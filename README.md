@@ -6,6 +6,8 @@
 *Add one action attribute to any HTML form and receive instant submissions. Free self-hosted & free managed cloud.*
 
 [![Free Cloud Managed Service](https://img.shields.io/badge/Free_Cloud-getforms.codaipro.com-10b981?style=for-the-badge&logo=cloudflare&logoColor=white)](https://getforms.codaipro.com)
+[![CI](https://img.shields.io/github/actions/workflow/status/Luckyyaduvanshiofficial/getforms/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/Luckyyaduvanshiofficial/getforms/actions)
+[![Release](https://img.shields.io/github/v/release/Luckyyaduvanshiofficial/getforms?style=for-the-badge&color=f59e0b)](https://github.com/Luckyyaduvanshiofficial/getforms/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-3b82f6.svg?style=for-the-badge)](./LICENSE)
 [![Author: Lucky Yaduvanshi](https://img.shields.io/badge/Author-Lucky_Yaduvanshi-6366f1.svg?style=for-the-badge)](https://github.com/Luckyyaduvanshiofficial)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-22c55e?style=for-the-badge&logo=node.js&logoColor=white)](#)
