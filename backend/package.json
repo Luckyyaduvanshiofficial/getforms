@@ -15,7 +15,9 @@
   },
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:clean": "node scripts/clean-db.js",
+    "db:reset": "node scripts/reset-db.js"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

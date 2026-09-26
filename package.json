@@ -17,7 +17,9 @@
     "build": "npm --prefix frontend run build",
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
-    "dev:frontend": "npm --prefix frontend run dev"
+    "dev:frontend": "npm --prefix frontend run dev",
+    "db:clean": "npm --prefix backend run db:clean",
+    "db:reset": "npm --prefix backend run db:reset"
   },
   "keywords": [
     "form",
