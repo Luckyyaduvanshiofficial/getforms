@@ -120,6 +120,181 @@ Here is an honest, direct feature comparison between **GetForms**, **Formspree**
 
 ---
 
+## 📖 Developer Integration Guide
+
+### 1. Plain HTML Form (Standard POST)
+
+Add your endpoint URL to the `action` attribute. Works with any static HTML site, Webflow, WordPress, Carrd, Ghost, or Framer:
+
+```html
+<form action="https://getforms.codaipro.com/f/your-form-slug" method="POST">
+  <!-- Standard fields -->
+  <label for="name">Full Name</label>
+  <input type="text" id="name" name="name" required />
+
+  <label for="email">Work Email</label>
+  <input type="email" id="email" name="email" required />
+
+  <label for="message">Project Details</label>
+  <textarea id="message" name="message" rows="4" required></textarea>
+
+  <!-- Optional custom redirect after submission -->
+  <input type="hidden" name="_next" value="https://yourwebsite.com/thank-you" />
+
+  <button type="submit">Send Message</button>
+</form>
+```
+
+---
+
+### 2. Modern JavaScript (`fetch` / AJAX)
+
+Submit asynchronously without page reloads, showing custom loading spinners and success states:
+
+```javascript
+const form = document.querySelector("#contact-form");
+const statusDiv = document.querySelector("#form-status");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  statusDiv.textContent = "Sending...";
+
+  const formData = new FormData(form);
+  const payload = Object.fromEntries(formData.entries());
+
+  try {
+    const res = await fetch("https://getforms.codaipro.com/f/your-form-slug", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.success) {
+      statusDiv.textContent = "Thank you! Your message has been sent.";
+      form.reset();
+    } else {
+      statusDiv.textContent = result.error || "Submission failed. Please try again.";
+    }
+  } catch (err) {
+    statusDiv.textContent = "Network error. Please check your connection.";
+  }
+});
+```
+
+---
+
+### 3. React & Next.js (App Router / Pages Router)
+
+A clean, production-ready React component with pending state, feedback toast, and error handling:
+
+```tsx
+"use client";
+
+import { useState } from "react";
+
+export default function ContactForm() {
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMessage("");
+
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch("https://getforms.codaipro.com/f/your-form-slug", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const json = await response.json();
+
+      if (response.ok && json.success) {
+        setStatus("success");
+      } else {
+        setStatus("error");
+        setErrorMessage(json.error || "Something went wrong.");
+      }
+    } catch (err) {
+      setStatus("error");
+      setErrorMessage("Network error. Please try again later.");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="p-6 bg-emerald-50 text-emerald-800 rounded-xl">
+        <h3 className="font-semibold text-lg">Message Received!</h3>
+        <p className="mt-1 text-sm">Thank you for reaching out. We will get back to you shortly.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-md">
+      <div>
+        <label className="block text-sm font-medium">Name</label>
+        <input name="name" required className="w-full border rounded-lg p-2.5 mt-1" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium">Email</label>
+        <input type="email" name="email" required className="w-full border rounded-lg p-2.5 mt-1" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium">Message</label>
+        <textarea name="message" rows={4} required className="w-full border rounded-lg p-2.5 mt-1" />
+      </div>
+      {status === "error" && (
+        <p className="text-sm text-red-600">{errorMessage}</p>
+      )}
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition"
+      >
+        {status === "loading" ? "Submitting..." : "Send Message"}
+      </button>
+    </form>
+  );
+}
+```
+
+---
+
+### 4. Astro / Svelte / Vue
+
+For Astro components, Svelte, or Vue 3:
+
+```astro
+---
+// Astro Component: Contact.astro
+---
+<form
+  action="https://getforms.codaipro.com/f/your-form-slug"
+  method="POST"
+  class="flex flex-col gap-4 max-w-md mx-auto"
+>
+  <input type="text" name="name" placeholder="Name" required class="input" />
+  <input type="email" name="email" placeholder="Email" required class="input" />
+  <textarea name="feedback" placeholder="Your Feedback" class="textarea"></textarea>
+  <button type="submit" class="btn-primary">Submit Feedback</button>
+</form>
+```
+
+---
+
 ## 🏁 Quick Start
 
 ### 1. Requirements
