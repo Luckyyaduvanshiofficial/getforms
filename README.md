@@ -74,6 +74,52 @@ GetForms was engineered to provide a self-contained, high-performance submission
 
 ---
 
+## 🥊 How GetForms Compares to the Competition
+
+Why build or switch to **GetForms**? Most existing form backend services are either **expensive closed-source commercial platforms** that penalize your growth with strict submission caps and monthly fees, or **half-baked open-source scripts** that lack clean UI, modern spam protection, and reliable queuing.
+
+Here is an honest, direct feature comparison between **GetForms**, **Formspree**, **FormBee**, **Formcarry**, and **Basin**:
+
+| Capability / Feature | ⚡ **GetForms** | 🟠 **Formspree** | 🐝 **FormBee** | 📦 **Formcarry** | 💧 **Basin** |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Pricing Model** | **100% Free** (Self-Host or [getforms.codaipro.com](https://getforms.codaipro.com)) | Freemium ($10 – $100+/mo) | Cloud requires monthly pay | $15 – $99+/month | $8 – $36+/month |
+| **Monthly Submission Limit** | **Unlimited** | 50/month (Free) | Plan-capped | 100/mo (Free) | 250/mo (Free) |
+| **Open-Source License** | **Apache 2.0 (100% Open)** | Closed-Source SaaS | Open Core (Cloud paywalled) | Closed-Source SaaS | Closed-Source SaaS |
+| **Zero-Config Database** | **Embedded SQLite WAL** (or Postgres) | Managed only | Requires external DB + Redis | Managed only | Managed only |
+| **Memory Footprint** | **< 100MB RAM** (Fastify v5 + SQLite) | Unknown | Heavy (Multiple containers) | Unknown | Unknown |
+| **Modern Anti-Spam** | **Turnstile + Altcha + Honeypot + reCAPTCHA** | Google reCAPTCHA only | Basic honeypot | Google reCAPTCHA | Google reCAPTCHA / hCaptcha |
+| **Double Opt-In Newsletters** | **Included Built-in** | Paid add-on ($25+/mo) | ❌ Not available | ❌ Not available | ❌ Not available |
+| **Auto-Responder Emails** | **Included Built-in** | Paid plans only | Basic text only | Paid plans only | Paid plans only |
+| **Multi-Channel Dispatch** | **Email, Discord, Telegram, Slack, Webhooks** | Email & basic Webhook | Email only | Email, Slack, Zapier | Email, Slack, Webhooks |
+| **Async Retries & Queue** | **Exponential backoff with jitter** | Standard | No built-in retry queue | Basic | Basic |
+| **Webhook HMAC Signatures** | **Native HMAC-SHA256** | Paid plans only | ❌ None | Paid plans only | Paid plans only |
+| **Multipart File Uploads** | **Included (Local/S3 configurable)** | Paid ($25+/mo) | Limited local | Paid ($15+/mo) | Paid ($12+/mo) |
+| **Dashboard UI Quality** | **Agency-tier (React 19 + Double Bezel)** | Generic standard UI | Dated / clunky | Standard dashboard | Minimalist |
+| **1-Click Test Submissions** | **Built right into endpoint view** | ❌ Manual | ❌ Manual | ❌ Manual | ❌ Manual |
+
+### 🔍 Deep-Dive: Why GetForms Wins
+
+1. **No Submission "Tax" on Growth**:
+   - Closed-source SaaS products like **Formspree**, **Formcarry**, and **Basin** charge aggressive monthly subscription fees the moment your site gets traffic. If your marketing campaign goes viral, they either truncate submissions or lock your account behind a $100/mo paywall.
+   - **GetForms gives you unlimited submissions forever** — whether you self-host or use our free managed cloud.
+
+2. **Zero Setup Friction (SQLite WAL Mode)**:
+   - Self-hosting **FormBee** or similar projects often requires orchestrating multiple heavyweight Docker services (PostgreSQL, Redis, background worker daemons, and Nginx).
+   - **GetForms boots in 1 single command**. It uses embedded **SQLite in WAL mode**, handling hundreds of concurrent submissions per second on a $4/month VPS or Raspberry Pi. Need high-availability clustering? Simply set `DATABASE_URL=postgresql://...`.
+
+3. **Privacy-Respecting Anti-Spam (Turnstile & Altcha)**:
+   - Competitors rely exclusively on Google reCAPTCHA, forcing invasive tracking cookies on your visitors and annoying them with crosswalk image puzzles.
+   - **GetForms includes Cloudflare Turnstile** (frictionless 1-second challenge) and **Altcha (Proof-of-Work)**, which runs cryptographically on the client with zero cookies and 100% GDPR compliance.
+
+4. **Multi-Channel Dispatch out of the Box**:
+   - With other services, receiving an alert in Discord or Telegram requires setting up Zapier or Make.com (which costs additional money).
+   - **GetForms natively formats and dispatches beautiful Rich Embeds to Discord, Markdown to Telegram, and payload notifications to Slack**.
+
+5. **Submissions Triage Inbox**:
+   - Most open-source form backends just dump JSON into a table. GetForms includes an **agency-tier triage workflow**: tag submissions, mark them `new`, `in_progress`, or `resolved`, write internal admin notes, search across form fields, and export clean CSVs with one click.
+
+---
+
 ## 🏁 Quick Start
 
 ### 1. Requirements
