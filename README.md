@@ -71,12 +71,44 @@ npm start
 
 Open your browser at **[http://localhost:3001](http://localhost:3001)**!
 
-### 3. Default Login
+### 3. Default Login & First-Run Setup
 On first boot, an administrator account is initialized automatically:
 - **Username**: `admin` (or `admin@getform.local`)
 - **Password**: `admin123`
 
-*(Make sure to change your password in Account settings after logging in).*
+*(Make sure to change your password in Account settings after logging in, or use the First-Run Setup wizard at `/setup`).*
+
+### 4. Database Maintenance & Reset
+For clean self-host installations or testing:
+```bash
+# Purge all test submissions and reset submission counts
+npm run db:clean
+
+# Purge submissions AND test forms
+node backend/scripts/clean-db.js --all
+
+# Reset local SQLite database completely to start fresh
+npm run db:reset
+```
+
+---
+
+## 🐳 Docker Compose Self-Hosting
+
+Run GetForms in production with Caddy (automatic SSL HTTPS) and PostgreSQL:
+
+```bash
+# 1. Copy production environment file
+cp .env.example .env
+
+# 2. Fill in DOMAIN, JWT_SECRET, and SMTP credentials in .env
+nano .env
+
+# 3. Start containers in background
+docker compose up -d --build
+```
+
+Caddy will automatically provision Let's Encrypt SSL certificates for your `$DOMAIN`.
 
 ---
 
