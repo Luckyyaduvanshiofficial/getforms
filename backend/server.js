@@ -148,6 +148,8 @@ if (fs.existsSync(frontendDist)) {
     prefix: '/',
     decorateReply: false
   });
+}
+
 export const __BUILD_INFO__ = Object.freeze({
   project: 'GetForms',
   author: 'Lucky Yaduvanshi',
