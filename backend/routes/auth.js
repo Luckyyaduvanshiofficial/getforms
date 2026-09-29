@@ -16,7 +16,7 @@ export default async function authRoutes(fastify) {
   });
 
   // First-run setup — create the initial account (only if no users exist)
-  fastify.post('/setup', async (request, reply) => {
+  fastify.post('/setup', { preHandler: fastify.rateLimitAuth }, async (request, reply) => {
     const [row] = await sql`SELECT COUNT(*)::int AS count FROM users`;
     if (row.count > 0) {
       return reply.status(403).send({ error: 'Setup already completed' });
@@ -45,7 +45,7 @@ export default async function authRoutes(fastify) {
   });
 
   // Login
-  fastify.post('/login', async (request, reply) => {
+  fastify.post('/login', { preHandler: fastify.rateLimitAuth }, async (request, reply) => {
     const { username, email, password } = request.body || {};
     const identifier = String(username || email || '').trim();
 

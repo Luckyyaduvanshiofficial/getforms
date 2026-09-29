@@ -120,6 +120,7 @@ fastify.decorate('rateLimitExport',       rateLimitPresets.export);
 fastify.decorate('rateLimitWebhookTest',  rateLimitPresets.webhookTest);
 fastify.decorate('rateLimitWebhookRetry', rateLimitPresets.webhookRetry);
 fastify.decorate('rateLimitReplyEmail',   rateLimitPresets.replyEmail);
+fastify.decorate('rateLimitAuth',         rateLimitPresets.auth);
 fastify.decorate('spamDetection',         spamDetectionMiddleware);
 fastify.decorate('honeypotDetection',     honeypotDetectionMiddleware);
 
