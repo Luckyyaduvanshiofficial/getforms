@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { formatDate, truncate } from "@/lib/utils"
+import { formatDate, truncate, isValidUrl } from "@/lib/utils"
 
 function SubmissionRow({ submission, onArchive, onRestore, onDeletePermanent, isArchived }) {
   const [expanded, setExpanded] = useState(false)
@@ -149,23 +149,31 @@ function SubmissionRow({ submission, onArchive, onRestore, onDeletePermanent, is
                   Attachments
                 </span>
                 <div className="space-y-1.5">
-                  {fileUrls.map((file, i) => (
-                    <a
-                      key={i}
-                      href={file.url || file}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Download className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">{file.name || `File ${i + 1}`}</span>
-                      {file.size && (
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {(file.size / 1024).toFixed(1)} KB
-                        </span>
-                      )}
-                    </a>
-                  ))}
+                  {fileUrls.map((file, i) => {
+                    const href = file.url || file
+                    return isValidUrl(href) ? (
+                      <a
+                        key={i}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline"
+                      >
+                        <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{file.name || `File ${i + 1}`}</span>
+                        {file.size && (
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <span key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{file.name || `File ${i + 1}`}</span>
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
             )}

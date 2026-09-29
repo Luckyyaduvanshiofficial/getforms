@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select"
 import { submissionsApi } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
-import { formatDate, truncate } from "@/lib/utils"
+import { formatDate, truncate, isValidUrl } from "@/lib/utils"
 import { useUnread } from "@/contexts/UnreadContext"
 
 const STATUS_CONFIG = {
@@ -249,23 +249,31 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
             {fileUrls.length > 0 && (
               <div className="pt-2 border-t space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground">Attachments</span>
-                {fileUrls.map((file, i) => (
-                  <a
-                    key={i}
-                    href={file.url || file}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Download className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{file.name || `File ${i + 1}`}</span>
-                    {file.size && (
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {(file.size / 1024).toFixed(1)} KB
-                      </span>
-                    )}
-                  </a>
-                ))}
+                {fileUrls.map((file, i) => {
+                  const href = file.url || file
+                  return isValidUrl(href) ? (
+                    <a
+                      key={i}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                      <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">{file.name || `File ${i + 1}`}</span>
+                      {file.size && (
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </a>
+                  ) : (
+                    <span key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Download className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">{file.name || `File ${i + 1}`}</span>
+                    </span>
+                  )
+                })}
               </div>
             )}
 
@@ -275,7 +283,7 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
               <span className="col-span-3">{submission.metadata?.ip || "N/A"}</span>
               <span className="text-muted-foreground">Received</span>
               <span className="col-span-3">{formatDate(submission.created_at)}</span>
-              {submission.metadata?.referer && (
+              {submission.metadata?.referer && isValidUrl(submission.metadata.referer) && (
                 <>
                   <span className="text-muted-foreground">Source</span>
                   <span className="col-span-3 truncate">
