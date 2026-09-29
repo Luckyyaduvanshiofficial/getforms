@@ -7,7 +7,6 @@ import crypto from 'crypto';
 import {
   validateEmailTemplate,
   validateFormEndpoint,
-  validateHostedFields,
   validateWebhookUrl
 } from '../utils/validation.js';
 import {
@@ -191,6 +190,15 @@ export default async function formRoutes(fastify) {
         auto_reply_enabled = false,
         auto_reply_subject = null,
         auto_reply_body = null,
+        email_template_enabled = false,
+        email_template_subject = null,
+        email_template_body = null,
+        logo_url = null,
+        double_opt_in_enabled = false,
+        confirmation_redirect_url = null,
+        blocklist = [],
+        close_after_submissions = null,
+        close_at = null,
         spam_engine = 'honeypot',
         turnstile_secret_key = null,
         recaptcha_secret_key = null,
@@ -203,6 +211,13 @@ export default async function formRoutes(fastify) {
 
       if (!name || typeof name !== 'string' || !name.trim()) {
         return reply.status(400).send({ error: 'Form name is required' });
+      }
+      const trimmedName = name.trim();
+      if (trimmedName.length > 120) {
+        return reply.status(400).send({ error: 'Form name too long (max 120 chars)' });
+      }
+      if (description !== undefined && description !== null && String(description).length > 2000) {
+        return reply.status(400).send({ error: 'Description too long (max 2000 chars)' });
       }
 
       let rawEndpoint = endpoint || custom_slug || slug;
@@ -217,6 +232,77 @@ export default async function formRoutes(fastify) {
 
       const emailSettings = normalizeEmailSettings({ notification_email, notification_emails, email_config });
       if (!emailSettings.valid) return reply.status(400).send({ error: 'Invalid email settings', message: emailSettings.error });
+
+      const emailTemplateCheck = validateEmailTemplate({
+        email_template_enabled, email_template_subject, email_template_body,
+        logo_url, notification_email, notification_emails, email_config
+      });
+      if (!emailTemplateCheck.valid) return reply.status(400).send({ error: 'Invalid email template', message: emailTemplateCheck.error });
+
+      const allowedEngines = new Set(['honeypot', 'turnstile', 'recaptcha', 'altcha']);
+      if (spam_engine && !allowedEngines.has(spam_engine)) {
+        return reply.status(400).send({ error: 'Invalid spam_engine', message: 'Must be honeypot, turnstile, recaptcha, or altcha' });
+      }
+      for (const [field, value] of [['turnstile_secret_key', turnstile_secret_key], ['recaptcha_secret_key', recaptcha_secret_key], ['altcha_secret_key', altcha_secret_key]]) {
+        if (value !== null && value !== undefined && String(value).length > 500) {
+          return reply.status(400).send({ error: `Invalid ${field}`, message: 'Secret too long (max 500 chars)' });
+        }
+      }
+      if (!Array.isArray(allowed_domains) || allowed_domains.length > 50 || allowed_domains.some(d => typeof d !== 'string' || d.length > 253)) {
+        return reply.status(400).send({ error: 'Invalid allowed_domains', message: 'Must be an array of up to 50 hostnames' });
+      }
+
+      const parsedMaxFileMb = max_file_size_mb === undefined || max_file_size_mb === null || max_file_size_mb === ''
+        ? 10
+        : Number(max_file_size_mb);
+      if (!Number.isFinite(parsedMaxFileMb) || parsedMaxFileMb < 1 || parsedMaxFileMb > 100) {
+        return reply.status(400).send({ error: 'Invalid max_file_size_mb', message: 'Must be 1-100 MB' });
+      }
+      if (!Array.isArray(allowed_file_types) || allowed_file_types.length > 50 || allowed_file_types.some(t => typeof t !== 'string' || t.length > 127)) {
+        return reply.status(400).send({ error: 'Invalid allowed_file_types' });
+      }
+
+      if (blocklist !== undefined && blocklist !== null) {
+        if (!Array.isArray(blocklist) || blocklist.length > 200) {
+          return reply.status(400).send({ error: 'Invalid blocklist', message: 'Must be an array of up to 200 entries' });
+        }
+        for (const entry of blocklist) {
+          if (!entry || typeof entry !== 'object' || !['ip', 'email', 'domain', 'keyword'].includes(entry.type) || typeof entry.value !== 'string' || !entry.value.trim() || entry.value.length > 500) {
+            return reply.status(400).send({ error: 'Invalid blocklist', message: 'Each entry needs type ip|email|domain|keyword and a value up to 500 chars' });
+          }
+        }
+      }
+
+      const parsedCloseAfter = close_after_submissions === undefined || close_after_submissions === null || close_after_submissions === ''
+        ? null
+        : Number(close_after_submissions);
+      if (parsedCloseAfter !== null && (!Number.isInteger(parsedCloseAfter) || parsedCloseAfter < 1 || parsedCloseAfter > 1000000)) {
+        return reply.status(400).send({ error: 'Invalid close_after_submissions', message: 'Must be an integer 1-1000000' });
+      }
+      if (close_at !== undefined && close_at !== null && close_at !== '') {
+        const closeAtDate = new Date(close_at);
+        if (Number.isNaN(closeAtDate.getTime())) {
+          return reply.status(400).send({ error: 'Invalid close_at', message: 'Must be a valid date' });
+        }
+      }
+
+      if (confirmation_redirect_url) {
+        try {
+          const u = new URL(confirmation_redirect_url);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            return reply.status(400).send({ error: 'Invalid confirmation_redirect_url', message: 'Must use http or https' });
+          }
+        } catch {
+          return reply.status(400).send({ error: 'Invalid confirmation_redirect_url', message: 'Must be a valid URL' });
+        }
+      }
+
+      if (auto_reply_subject !== undefined && auto_reply_subject !== null && String(auto_reply_subject).length > 200) {
+        return reply.status(400).send({ error: 'auto_reply_subject too long (max 200 chars)' });
+      }
+      if (auto_reply_body !== undefined && auto_reply_body !== null && Buffer.byteLength(String(auto_reply_body), 'utf8') > 51200) {
+        return reply.status(400).send({ error: 'auto_reply_body too large (max 50KB)' });
+      }
 
       if (redirect_url) {
         try {
@@ -245,18 +331,21 @@ export default async function formRoutes(fastify) {
           webhook_url, slack_webhook_url, discord_webhook_url, active, tags,
           notify_email, notify_telegram, notify_slack, notify_discord,
           auto_reply_enabled, auto_reply_subject, auto_reply_body,
+          email_template_enabled, email_template_subject, email_template_body, logo_url,
+          double_opt_in_enabled, confirmation_redirect_url,
           spam_engine, turnstile_secret_key, recaptcha_secret_key, altcha_secret_key,
           allowed_domains, file_uploads_enabled, max_file_size_mb, allowed_file_types,
+          blocklist, close_after_submissions, close_at,
           created_at, updated_at
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,NOW(),NOW())
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,NOW(),NOW())
         RETURNING ${SAFE_FORM_COLS}`,
         [
           formId,
           request.user.userId,
-          name,
+          trimmedName,
           normalizedEndpoint,
-          description || null,
+          description ? String(description).trim().slice(0, 2000) : null,
           emailSettings.normalized.notification_email || null,
           redirect_url || null,
           emailSettings.normalized.email_config ? JSON.stringify(emailSettings.normalized.email_config) : null,
@@ -264,22 +353,31 @@ export default async function formRoutes(fastify) {
           slack_webhook_url || null,
           discord_webhook_url || null,
           Boolean(active),
-          JSON.stringify(Array.isArray(tags) ? tags : []),
+          JSON.stringify(Array.isArray(tags) ? tags.slice(0, 50).map(t => String(t).slice(0, 50)) : []),
           Boolean(notify_email),
           Boolean(notify_telegram),
           Boolean(notify_slack),
           Boolean(notify_discord),
           Boolean(auto_reply_enabled),
-          auto_reply_subject || null,
-          auto_reply_body || null,
+          auto_reply_subject ? String(auto_reply_subject).slice(0, 200) : null,
+          auto_reply_body ? String(auto_reply_body).slice(0, 51200) : null,
+          Boolean(email_template_enabled),
+          email_template_subject ? String(email_template_subject).slice(0, 200) : null,
+          email_template_body ? String(email_template_body).slice(0, 51200) : null,
+          logo_url ? String(logo_url).slice(0, 2000) : null,
+          Boolean(double_opt_in_enabled),
+          confirmation_redirect_url || null,
           spam_engine || 'honeypot',
-          turnstile_secret_key || null,
-          recaptcha_secret_key || null,
-          altcha_secret_key || null,
+          turnstile_secret_key ? String(turnstile_secret_key).slice(0, 500) : null,
+          recaptcha_secret_key ? String(recaptcha_secret_key).slice(0, 500) : null,
+          altcha_secret_key ? String(altcha_secret_key).slice(0, 500) : null,
           JSON.stringify(Array.isArray(allowed_domains) ? allowed_domains : ['*']),
           Boolean(file_uploads_enabled),
-          parseInt(max_file_size_mb, 10) || 10,
+          parsedMaxFileMb,
           JSON.stringify(Array.isArray(allowed_file_types) ? allowed_file_types : []),
+          JSON.stringify(Array.isArray(blocklist) ? blocklist : []),
+          parsedCloseAfter,
+          close_at ? new Date(close_at).toISOString() : null,
         ]
       );
 
@@ -306,6 +404,118 @@ export default async function formRoutes(fastify) {
       const emailSettings = normalizeEmailSettings(updates);
       if (!emailSettings.valid) return reply.status(400).send({ error: 'Invalid email settings', message: emailSettings.error });
       Object.assign(updates, emailSettings.normalized);
+
+      const templateCheck = validateEmailTemplate(updates);
+      if (!templateCheck.valid) return reply.status(400).send({ error: 'Invalid email template', message: templateCheck.error });
+
+      if ('name' in updates) {
+        if (typeof updates.name !== 'string' || !updates.name.trim()) {
+          return reply.status(400).send({ error: 'Form name is required' });
+        }
+        updates.name = updates.name.trim().slice(0, 120);
+      }
+      if ('description' in updates && updates.description !== null && updates.description !== undefined) {
+        if (String(updates.description).length > 2000) {
+          return reply.status(400).send({ error: 'Description too long (max 2000 chars)' });
+        }
+        updates.description = String(updates.description).trim().slice(0, 2000);
+      }
+      if ('spam_engine' in updates && updates.spam_engine) {
+        const allowedEngines = new Set(['honeypot', 'turnstile', 'recaptcha', 'altcha']);
+        if (!allowedEngines.has(updates.spam_engine)) {
+          return reply.status(400).send({ error: 'Invalid spam_engine', message: 'Must be honeypot, turnstile, recaptcha, or altcha' });
+        }
+      }
+      for (const field of ['turnstile_secret_key', 'recaptcha_secret_key', 'altcha_secret_key']) {
+        if (field in updates && updates[field] !== null && updates[field] !== undefined && String(updates[field]).length > 500) {
+          return reply.status(400).send({ error: `Invalid ${field}`, message: 'Secret too long (max 500 chars)' });
+        }
+      }
+      if ('allowed_domains' in updates) {
+        const v = updates.allowed_domains;
+        if (!Array.isArray(v) || v.length > 50 || v.some(d => typeof d !== 'string' || d.length > 253)) {
+          return reply.status(400).send({ error: 'Invalid allowed_domains', message: 'Must be an array of up to 50 hostnames' });
+        }
+      }
+      if ('max_file_size_mb' in updates) {
+        const v = updates.max_file_size_mb === '' || updates.max_file_size_mb === null ? 10 : Number(updates.max_file_size_mb);
+        if (!Number.isFinite(v) || v < 1 || v > 100) {
+          return reply.status(400).send({ error: 'Invalid max_file_size_mb', message: 'Must be 1-100 MB' });
+        }
+        updates.max_file_size_mb = v;
+      }
+      if ('allowed_file_types' in updates) {
+        const v = updates.allowed_file_types;
+        if (!Array.isArray(v) || v.length > 50 || v.some(t => typeof t !== 'string' || t.length > 127)) {
+          return reply.status(400).send({ error: 'Invalid allowed_file_types' });
+        }
+      }
+      if ('blocklist' in updates && updates.blocklist !== null && updates.blocklist !== undefined) {
+        const v = updates.blocklist;
+        if (!Array.isArray(v) || v.length > 200) {
+          return reply.status(400).send({ error: 'Invalid blocklist', message: 'Must be an array of up to 200 entries' });
+        }
+        for (const entry of v) {
+          if (!entry || typeof entry !== 'object' || !['ip', 'email', 'domain', 'keyword'].includes(entry.type) || typeof entry.value !== 'string' || !entry.value.trim() || entry.value.length > 500) {
+            return reply.status(400).send({ error: 'Invalid blocklist', message: 'Each entry needs type ip|email|domain|keyword and a value up to 500 chars' });
+          }
+        }
+      }
+      if ('close_after_submissions' in updates && updates.close_after_submissions !== null && updates.close_after_submissions !== '') {
+        const v = Number(updates.close_after_submissions);
+        if (!Number.isInteger(v) || v < 1 || v > 1000000) {
+          return reply.status(400).send({ error: 'Invalid close_after_submissions', message: 'Must be an integer 1-1000000' });
+        }
+        updates.close_after_submissions = v;
+      }
+      if ('close_at' in updates && updates.close_at !== null && updates.close_at !== '') {
+        const d = new Date(updates.close_at);
+        if (Number.isNaN(d.getTime())) {
+          return reply.status(400).send({ error: 'Invalid close_at', message: 'Must be a valid date' });
+        }
+        updates.close_at = d.toISOString();
+      }
+      if ('tags' in updates) {
+        if (!Array.isArray(updates.tags)) {
+          return reply.status(400).send({ error: 'Invalid tags', message: 'Must be an array' });
+        }
+        updates.tags = updates.tags.slice(0, 50).map(t => String(t).slice(0, 50));
+      }
+      if ('confirmation_redirect_url' in updates && updates.confirmation_redirect_url) {
+        try {
+          const u = new URL(updates.confirmation_redirect_url);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            return reply.status(400).send({ error: 'Invalid confirmation_redirect_url', message: 'Must use http or https' });
+          }
+        } catch {
+          return reply.status(400).send({ error: 'Invalid confirmation_redirect_url', message: 'Must be a valid URL' });
+        }
+      }
+      if ('auto_reply_subject' in updates && updates.auto_reply_subject !== null && updates.auto_reply_subject !== undefined && String(updates.auto_reply_subject).length > 200) {
+        return reply.status(400).send({ error: 'auto_reply_subject too long (max 200 chars)' });
+      }
+      if ('auto_reply_body' in updates && updates.auto_reply_body !== null && updates.auto_reply_body !== undefined && Buffer.byteLength(String(updates.auto_reply_body), 'utf8') > 51200) {
+        return reply.status(400).send({ error: 'auto_reply_body too large (max 50KB)' });
+      }
+      if ('email_template_subject' in updates && updates.email_template_subject !== null && updates.email_template_subject !== undefined && String(updates.email_template_subject).length > 200) {
+        return reply.status(400).send({ error: 'email_template_subject too long (max 200 chars)' });
+      }
+      if ('email_template_body' in updates && updates.email_template_body !== null && updates.email_template_body !== undefined && Buffer.byteLength(String(updates.email_template_body), 'utf8') > 51200) {
+        return reply.status(400).send({ error: 'email_template_body too large (max 50KB)' });
+      }
+      if ('logo_url' in updates && updates.logo_url) {
+        try {
+          const u = new URL(updates.logo_url);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            return reply.status(400).send({ error: 'Invalid logo_url', message: 'Must use http or https' });
+          }
+        } catch {
+          return reply.status(400).send({ error: 'Invalid logo_url', message: 'Must be a valid URL' });
+        }
+      }
+      for (const field of ['notify_email', 'notify_telegram', 'notify_slack', 'notify_discord', 'auto_reply_enabled', 'double_opt_in_enabled', 'file_uploads_enabled', 'active', 'email_template_enabled']) {
+        if (field in updates) updates[field] = Boolean(updates[field]);
+      }
 
       if (updates.redirect_url) {
         try {
