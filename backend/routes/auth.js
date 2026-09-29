@@ -101,7 +101,8 @@ export default async function authRoutes(fastify) {
       });
       return { success: true };
     } catch (err) {
-      return reply.status(502).send({ error: `Failed to send: ${err.message}` });
+      request.log.error({ err }, 'Test email failed');
+      return reply.status(502).send({ error: 'Failed to send test email', message: 'Please try again later.' });
     }
   });
 
