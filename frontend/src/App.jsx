@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   BrowserRouter,
   Routes,
@@ -59,6 +59,7 @@ function SetupGuard({ children }) {
   const [error, setError] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const timers = useRef([])
 
   useEffect(() => {
     let cancelled = false
@@ -76,7 +77,8 @@ function SetupGuard({ children }) {
       } catch {
         if (cancelled) return
         if (attempt < SETUP_RETRY_DELAYS.length) {
-          setTimeout(() => check(attempt + 1), SETUP_RETRY_DELAYS[attempt])
+          const id = setTimeout(() => check(attempt + 1), SETUP_RETRY_DELAYS[attempt])
+          timers.current.push(id)
         } else {
           setError(true)
           setChecking(false)
@@ -85,8 +87,12 @@ function SetupGuard({ children }) {
     }
 
     check()
-    return () => { cancelled = true }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true
+      timers.current.forEach(clearTimeout)
+      timers.current = []
+    }
+  }, [location.pathname, navigate])
 
   if (checking) {
     return (
@@ -118,6 +124,7 @@ function SetupGuard({ children }) {
 
 function ProtectedRoute() {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -127,7 +134,12 @@ function ProtectedRoute() {
     )
   }
 
-  return user ? <DashboardLayout /> : <Navigate to="/login" replace />
+  if (!user) {
+    const next = `${location.pathname}${location.search}`
+    return <Navigate to={next && next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login"} replace />
+  }
+
+  return <DashboardLayout />
 }
 
 function PublicRoute({ children }) {

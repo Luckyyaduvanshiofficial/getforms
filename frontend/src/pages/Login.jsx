@@ -3,12 +3,13 @@
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +22,8 @@ export default function Login() {
     setLoading(true)
     try {
       await login(username, password)
-      navigate('/dashboard')
+      const next = searchParams.get('next')
+      navigate(next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard', { replace: true })
     } catch (err) {
       setError(err.response?.data?.error || 'Invalid username or password')
     } finally {
