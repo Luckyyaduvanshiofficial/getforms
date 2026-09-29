@@ -268,6 +268,10 @@ export default async function publicRoutes(fastify) {
           if (part.file) {
             if (form.file_uploads_enabled) {
               const buffer = await part.toBuffer();
+              const maxBytes = (Number(form.max_file_size_mb) || 10) * 1024 * 1024;
+              if (buffer.length > maxBytes) {
+                return reply.status(413).send({ error: 'File too large', message: `Max file size is ${form.max_file_size_mb || 10}MB` });
+              }
               if (isAllowedMimeType(part.mimetype, form.allowed_file_types)) {
                 const saved = await saveUploadedFile({
                   buffer,
