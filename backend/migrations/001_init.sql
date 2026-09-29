@@ -49,10 +49,26 @@ CREATE TABLE IF NOT EXISTS forms (
   webhook_url             TEXT,
   slack_webhook_url       TEXT,
   discord_webhook_url     TEXT,
+  webhook_secret          TEXT,
   -- Redirect
   redirect_url            TEXT,
   -- Spam / blocklist
+  allowed_domains         JSONB NOT NULL DEFAULT '["*"]',
+  spam_engine             TEXT NOT NULL DEFAULT 'honeypot',
+  turnstile_secret_key    TEXT,
+  recaptcha_secret_key    TEXT,
+  altcha_secret_key       TEXT,
+  -- File uploads
+  file_uploads_enabled    BOOLEAN NOT NULL DEFAULT false,
+  max_file_size_mb        INTEGER NOT NULL DEFAULT 10,
+  allowed_file_types      JSONB NOT NULL DEFAULT '[]',
   blocklist               JSONB NOT NULL DEFAULT '[]',
+  -- Auto-reply / double opt-in
+  auto_reply_enabled      BOOLEAN NOT NULL DEFAULT false,
+  auto_reply_subject      TEXT,
+  auto_reply_body         TEXT,
+  double_opt_in_enabled   BOOLEAN NOT NULL DEFAULT false,
+  confirmation_redirect_url TEXT,
   -- Auto-close
   close_after_submissions INTEGER,
   close_at                TIMESTAMPTZ,
@@ -62,6 +78,7 @@ CREATE TABLE IF NOT EXISTS forms (
   notify_email            BOOLEAN NOT NULL DEFAULT false,
   notify_telegram         BOOLEAN NOT NULL DEFAULT false,
   notify_slack            BOOLEAN NOT NULL DEFAULT false,
+  notify_discord          BOOLEAN NOT NULL DEFAULT false,
   -- Cached counter
   submission_count        INTEGER NOT NULL DEFAULT 0,
   created_at              TIMESTAMPTZ DEFAULT NOW(),
@@ -84,6 +101,8 @@ CREATE TABLE IF NOT EXISTS submissions (
   archived      BOOLEAN NOT NULL DEFAULT false,
   read_at       TIMESTAMPTZ,
   status        TEXT NOT NULL DEFAULT 'new',  -- new | in_progress | resolved
+  is_confirmed  BOOLEAN NOT NULL DEFAULT true,
+  confirmation_token TEXT,
   notes         TEXT,
   created_at    TIMESTAMPTZ DEFAULT NOW()
 );
@@ -110,6 +129,26 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
 
 CREATE INDEX IF NOT EXISTS idx_webhook_logs_form_id    ON webhook_logs(form_id);
 CREATE INDEX IF NOT EXISTS idx_webhook_logs_created_at ON webhook_logs(created_at DESC);
+
+-- ============================================================
+-- DELIVERY_QUEUE TABLE (async notification jobs)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS delivery_queue (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  submission_id UUID,
+  form_id       UUID NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+  job_type      TEXT NOT NULL,
+  payload       JSONB NOT NULL DEFAULT '{}',
+  status        TEXT NOT NULL DEFAULT 'pending',  -- pending | retry | completed | failed
+  attempts      INTEGER NOT NULL DEFAULT 0,
+  max_attempts  INTEGER NOT NULL DEFAULT 5,
+  next_run_at   TIMESTAMPTZ DEFAULT NOW(),
+  error_message TEXT,
+  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_queue_status_run ON delivery_queue(status, next_run_at);
 
 -- ============================================================
 -- FUNCTION: increment_submission_count
