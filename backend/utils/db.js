@@ -366,13 +366,5 @@ export const dbHelpers = {
       RETURNING *
     `;
     return confirmed || null;
-  },
-
-  async enqueueJob(submissionId, formId, jobType, payload) {
-    const id = crypto.randomUUID();
-    await sql`
-      INSERT INTO delivery_queue (id, submission_id, form_id, job_type, payload, status, next_run_at)
-      VALUES (${id}, ${submissionId}, ${formId}, ${jobType}, ${sql.json(payload)}, 'pending', NOW())
-    `;
   }
 };
