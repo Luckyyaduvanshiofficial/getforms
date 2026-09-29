@@ -3,6 +3,7 @@
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
 import sql from '../utils/db.js';
+import crypto from 'crypto';
 import {
   validateEmailTemplate,
   validateFormEndpoint,

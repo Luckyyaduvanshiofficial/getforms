@@ -3,6 +3,7 @@
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
 import sql from './db.js';
+import crypto from 'crypto';
 import { emailHelpers, replaceVariables } from './mailer.js';
 import { sendTelegramNotification } from './telegram.js';
 import { sendSlackNotification } from './slack.js';
