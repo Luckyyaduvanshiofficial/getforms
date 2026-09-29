@@ -660,7 +660,8 @@ export default function EmailTemplateEditor({ formId, formName }) {
                     dangerouslySetInnerHTML={{
                       __html: DOMPurify.sanitize(getPreviewContent(), {
                         ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'hr', 'ul', 'ol', 'li', 'a', 'img', 'span', 'div'],
-                        ALLOWED_ATTR: ['href', 'src', 'alt', 'style', 'width', 'height', 'target', 'rel'],
+                        ALLOWED_ATTR: ['href', 'src', 'alt', 'width', 'height', 'target', 'rel'],
+                        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|cid):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
                       })
                     }}
                   />
