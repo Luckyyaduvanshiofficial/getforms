@@ -2,3 +2,9 @@ node_modules
 .env
 .env.*
 *.log
+getform.db
+data/
+uploads/
+*.db
+*.db-wal
+*.db-shm
