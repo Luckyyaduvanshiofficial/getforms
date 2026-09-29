@@ -107,11 +107,13 @@ export default function Login() {
           </form>
 
           {/* Quick Dev Credentials Hint */}
-          <div className="mt-5 pt-4 border-t border-border/50 text-center">
-            <p className="text-[11px] text-muted-foreground">
-              Default credentials: <span className="font-mono text-foreground font-medium">admin</span> / <span className="font-mono text-foreground font-medium">admin123</span>
-            </p>
-          </div>
+          {import.meta.env.DEV && (
+            <div className="mt-5 pt-4 border-t border-border/50 text-center">
+              <p className="text-[11px] text-muted-foreground">
+                Default credentials: <span className="font-mono text-foreground font-medium">admin</span> / <span className="font-mono text-foreground font-medium">admin123</span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Feature Highlights Pills */}
