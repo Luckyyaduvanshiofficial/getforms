@@ -24,11 +24,8 @@ services:
       PORT: 3001
       HOST: 0.0.0.0
       NODE_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: getforms
-      DB_USER: getforms
-      # DB password + JWT_SECRET + SMTP_* come from .env
+      DB_CLIENT: postgres
+      DATABASE_URL: postgresql://getforms:${POSTGRES_PASSWORD:-getforms}@postgres:5432/getforms
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/data:/app/data
