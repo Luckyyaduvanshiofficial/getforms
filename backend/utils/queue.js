@@ -194,8 +194,9 @@ async function handleAutoReply(payload) {
   const defaultBody = `<p>Hi there,</p><p>Thank you for reaching out! We received your submission for <strong>${form.name || form.endpoint}</strong> and will get back to you shortly.</p>`;
   const bodyHtml = form.auto_reply_body ? replaceVariables(form.auto_reply_body, submissionData) : defaultBody;
 
-  // Use form SMTP if configured, else owner SMTP, else global SMTP
-  const smtpConfig = form.email_config || form.owner_smtp_config || {
+  // Use owner SMTP transport config (form.email_config only holds
+  // notification to/from/subject fields, never SMTP credentials)
+  const smtpConfig = form._smtpConfig || form.owner_smtp_config || {
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true',
@@ -226,7 +227,7 @@ async function handleDoubleOptIn(payload) {
   const { form, submitterEmail, confirmUrl } = payload;
   if (!submitterEmail || !confirmUrl) return;
 
-  const smtpConfig = form.email_config || form.owner_smtp_config || {
+  const smtpConfig = form._smtpConfig || form.owner_smtp_config || {
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true',
