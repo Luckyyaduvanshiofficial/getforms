@@ -6,14 +6,15 @@ import axios from "axios"
 
 // Empty string = relative URLs = same domain (production via Caddy)
 // Set VITE_API_BASE_URL only for local dev (e.g. http://localhost:3001)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
-const TOKEN_KEY = 'getforms_token'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
+export const TOKEN_KEY = 'getforms_token'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 15000,
 })
 
 // Request interceptor — attach JWT from localStorage
