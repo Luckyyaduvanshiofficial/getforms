@@ -118,21 +118,43 @@ export default async function formRoutes(fastify) {
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache');
     reply.raw.setHeader('Connection', 'keep-alive');
-    reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+    reply.raw.setHeader('X-Accel-Buffering', 'no');
     reply.raw.flushHeaders?.();
 
     if (!sseClients.has(formId)) {
       sseClients.set(formId, new Set());
     }
     const clientSet = sseClients.get(formId);
+    if (clientSet.size >= 20) {
+      reply.raw.write(`data: ${JSON.stringify({ type: 'error', error: 'Too many live connections' })}\n\n`);
+      return reply.raw.end();
+    }
     clientSet.add(reply);
 
     reply.raw.write(`data: ${JSON.stringify({ type: 'connected', formId })}\n\n`);
 
-    request.raw.on('close', () => {
+    const heartbeat = setInterval(() => {
+      try {
+        reply.raw.write(': ping\n\n');
+      } catch {
+        clearInterval(heartbeat);
+      }
+    }, 25000);
+    heartbeat.unref?.();
+
+    const idleTimeout = setTimeout(() => {
+      try { reply.raw.end(); } catch {}
+    }, 10 * 60 * 1000);
+    idleTimeout.unref?.();
+
+    const cleanup = () => {
+      clearInterval(heartbeat);
+      clearTimeout(idleTimeout);
       clientSet.delete(reply);
       if (clientSet.size === 0) sseClients.delete(formId);
-    });
+    };
+    request.raw.on('close', cleanup);
+    reply.raw.on('close', cleanup);
   });
 
   // GET /api/forms/:formId
