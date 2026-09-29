@@ -149,14 +149,14 @@ export async function deliverWebhook(form, submissionData, metadata) {
     // Log success
     await sql`
       INSERT INTO webhook_logs (id, form_id, payload, status, created_at)
-      VALUES (${crypto.randomUUID()}, ${form.id}, ${sql.json(payload)}, 'success', datetime('now'))
+      VALUES (${crypto.randomUUID()}, ${form.id}, ${sql.json(payload)}, 'success', NOW())
     `;
   } catch (err) {
     console.error(`[Webhook] Delivery failed to ${url}:`, err.message);
     try {
       await sql`
         INSERT INTO webhook_logs (id, form_id, payload, status, created_at)
-        VALUES (${crypto.randomUUID()}, ${form.id}, ${sql.json({ url, error: err.message })}, 'failed', datetime('now'))
+        VALUES (${crypto.randomUUID()}, ${form.id}, ${sql.json({ url, error: err.message })}, 'failed', NOW())
       `;
     } catch {}
     throw err;

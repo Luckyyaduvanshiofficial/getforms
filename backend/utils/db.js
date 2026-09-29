@@ -147,6 +147,8 @@ function executeSqlite(rawQuery, params) {
   let query = rawQuery.replace(/::[a-zA-Z_]+/g, '');
   // Map Postgres NOW() - INTERVAL '1 day' to SQLite datetime('now', '-1 day')
   query = query.replace(/NOW\(\)\s*-\s*INTERVAL\s*'([^']+)'/gi, "datetime('now', '-$1')");
+  // Map bare Postgres NOW() to SQLite datetime('now') so shared queries run on both DBs
+  query = query.replace(/\bNOW\(\)/gi, "datetime('now')");
   const isSelect = /^\s*SELECT/i.test(query);
   const isReturning = /RETURNING/i.test(query);
 
@@ -324,7 +326,7 @@ export const dbHelpers = {
     await sql`
       UPDATE forms
       SET submission_count = COALESCE(submission_count, 0) + 1,
-          updated_at = datetime('now')
+          updated_at = NOW()
       WHERE id = ${formId}
     `;
     return submission;
@@ -340,7 +342,7 @@ export const dbHelpers = {
     await sql`
       UPDATE forms
       SET submission_count = COALESCE(submission_count, 0) + 1,
-          updated_at = datetime('now')
+          updated_at = NOW()
       WHERE id = ${formId}
     `;
     return submission;
@@ -360,7 +362,7 @@ export const dbHelpers = {
     const id = crypto.randomUUID();
     await sql`
       INSERT INTO delivery_queue (id, submission_id, form_id, job_type, payload, status, next_run_at)
-      VALUES (${id}, ${submissionId}, ${formId}, ${jobType}, ${sql.json(payload)}, 'pending', datetime('now'))
+      VALUES (${id}, ${submissionId}, ${formId}, ${jobType}, ${sql.json(payload)}, 'pending', NOW())
     `;
   }
 };

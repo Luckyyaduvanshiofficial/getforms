@@ -22,7 +22,7 @@ export async function enqueueDeliveryJob({ submissionId, formId, jobType, payloa
   try {
     await sql`
       INSERT INTO delivery_queue (id, submission_id, form_id, job_type, payload, status, next_run_at)
-      VALUES (${id}, ${submissionId}, ${formId}, ${jobType}, ${sql.json(payload)}, 'pending', datetime('now'))
+      VALUES (${id}, ${submissionId}, ${formId}, ${jobType}, ${sql.json(payload)}, 'pending', NOW())
     `;
     // Trigger immediate execution
     setImmediate(processQueueBatch);
@@ -62,7 +62,7 @@ async function processQueueBatch() {
     const jobs = await sql`
       SELECT * FROM delivery_queue
       WHERE status IN ('pending', 'retry')
-        AND datetime(next_run_at) <= datetime('now')
+        AND next_run_at <= ${new Date().toISOString()}
       ORDER BY created_at ASC
       LIMIT 10
     `;
@@ -129,7 +129,7 @@ async function processSingleJob(job) {
     // Mark job as completed
     await sql`
       UPDATE delivery_queue
-      SET status = 'completed', updated_at = datetime('now')
+      SET status = 'completed', updated_at = NOW()
       WHERE id = ${id}
     `;
 
@@ -145,7 +145,7 @@ async function processSingleJob(job) {
         SET status = 'failed',
             attempts = ${currentAttempt},
             error_message = ${err.message},
-            updated_at = datetime('now')
+            updated_at = NOW()
         WHERE id = ${id}
       `;
 
@@ -153,7 +153,7 @@ async function processSingleJob(job) {
       try {
         await sql`
           INSERT INTO webhook_logs (id, form_id, payload, status, retry_count, last_retry_at)
-          VALUES (${crypto.randomUUID()}, ${form_id}, ${sql.json({ job_type, error: err.message })}, 'failed', ${currentAttempt}, datetime('now'))
+          VALUES (${crypto.randomUUID()}, ${form_id}, ${sql.json({ job_type, error: err.message })}, 'failed', ${currentAttempt}, NOW())
         `;
       } catch {}
 
@@ -168,7 +168,7 @@ async function processSingleJob(job) {
             attempts = ${currentAttempt},
             next_run_at = ${nextRun},
             error_message = ${err.message},
-            updated_at = datetime('now')
+            updated_at = NOW()
         WHERE id = ${id}
       `;
     }
