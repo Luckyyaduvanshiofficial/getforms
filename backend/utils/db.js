@@ -350,12 +350,22 @@ export const dbHelpers = {
 
   async confirmSubmission(endpoint, token) {
     const [submission] = await sql`
+      SELECT * FROM submissions
+      WHERE form_endpoint = ${endpoint} AND confirmation_token = ${token}
+      LIMIT 1
+    `;
+    if (!submission) return null;
+    // Confirmation links expire after 48h (checked in JS so the
+    // comparison works on both SQLite TEXT and Postgres TIMESTAMPTZ)
+    const ageMs = Date.now() - new Date(submission.created_at).getTime();
+    if (!Number.isFinite(ageMs) || ageMs > 48 * 3600 * 1000) return null;
+    const [confirmed] = await sql`
       UPDATE submissions
       SET is_confirmed = true, confirmation_token = NULL
-      WHERE form_endpoint = ${endpoint} AND confirmation_token = ${token}
+      WHERE id = ${submission.id}
       RETURNING *
     `;
-    return submission || null;
+    return confirmed || null;
   },
 
   async enqueueJob(submissionId, formId, jobType, payload) {
