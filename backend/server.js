@@ -94,7 +94,11 @@ await fastify.register(multipart, {
 // Serve static file uploads
 await fastify.register(fastifyStatic, {
   root: UPLOADS_DIR,
-  prefix: '/uploads/'
+  prefix: '/uploads/',
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "sandbox allow-downloads");
+  }
 });
 
 // ─── Rate limiting (in-memory) ────────────────────────────────────────────────
