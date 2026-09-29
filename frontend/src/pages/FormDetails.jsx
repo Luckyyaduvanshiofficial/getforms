@@ -24,7 +24,7 @@ import CodeSnippet from "@/components/CodeSnippet"
 import EmailTemplateEditor from "@/components/EmailTemplateEditor"
 import { QRCodeSVG } from "qrcode.react"
 import { formatDate } from "@/lib/utils"
-import { formsApi, submissionsApi } from "@/lib/api"
+import { formsApi, submissionsApi, PUBLIC_BASE_URL as API_BASE_URL } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
 const PAGE_SIZE = 50
@@ -122,7 +122,7 @@ export default function FormDetails() {
     if (form) fetchArchivedSubmissions(archivedPage)
   }, [form, archivedPage, fetchArchivedSubmissions])
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
+  const safeFileStem = String(form?.name || "form").toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "form"
 
   const handleCopyEndpoint = () => {
     navigator.clipboard.writeText(`${API_BASE_URL}/f/${form?.endpoint}`)
@@ -147,7 +147,7 @@ export default function FormDetails() {
       ctx.drawImage(img, 0, 0)
       URL.revokeObjectURL(url)
       const a = document.createElement("a")
-      a.download = `${form?.name || "form"}-qr.png`
+      a.download = `${safeFileStem}-qr.png`
       a.href = canvas.toDataURL("image/png")
       a.click()
     }
@@ -164,7 +164,7 @@ export default function FormDetails() {
         const url = window.URL.createObjectURL(response.data)
         const a = document.createElement("a")
         a.href = url
-        a.download = `${form?.name || "form"}-submissions.csv`
+        a.download = `${safeFileStem}-submissions.csv`
         a.click()
         window.URL.revokeObjectURL(url)
       } else {
@@ -176,7 +176,7 @@ export default function FormDetails() {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = `${form?.name || "form"}-submissions.json`
+        a.download = `${safeFileStem}-submissions.json`
         a.click()
         window.URL.revokeObjectURL(url)
       }

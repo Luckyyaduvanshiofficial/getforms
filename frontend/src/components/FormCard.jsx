@@ -25,8 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { formatDate, formatNumber } from "@/lib/utils"
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
+import { PUBLIC_BASE_URL as API_BASE_URL } from "@/lib/api"
 
 // Deterministic color from tag string
 const TAG_COLORS = [

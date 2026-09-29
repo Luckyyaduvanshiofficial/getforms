@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/hooks/use-toast"
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
+import { PUBLIC_BASE_URL as BASE_URL } from "@/lib/api"
 
 const getHtmlSnippet = (endpoint) => `<form action="${BASE_URL}/f/${endpoint}" method="POST">
   <input type="text" name="name" placeholder="Your name" required />

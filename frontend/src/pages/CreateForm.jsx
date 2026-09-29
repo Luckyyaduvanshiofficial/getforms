@@ -28,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { isValidUrl, isValidEmail } from "@/lib/utils"
-import { formsApi } from "@/lib/api"
+import { formsApi, PUBLIC_BASE_URL as baseUrl } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
 
 const PRESETS = [
@@ -266,8 +266,6 @@ export default function CreateForm() {
       setLoading(false)
     }
   }
-
-  const baseUrl = window.location.origin
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">

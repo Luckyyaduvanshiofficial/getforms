@@ -9,6 +9,12 @@ import axios from "axios"
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ""
 export const TOKEN_KEY = 'getforms_token'
 
+// Public base for hosted form URLs shown/copied in the dashboard.
+// Empty VITE_API_BASE_URL means same-origin in production (via Caddy),
+// so fall back to window.location.origin for display purposes.
+export const PUBLIC_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : "")
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
