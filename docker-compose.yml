@@ -25,7 +25,7 @@ services:
       HOST: 0.0.0.0
       NODE_ENV: production
       DB_CLIENT: postgres
-      DATABASE_URL: postgresql://getforms:${POSTGRES_PASSWORD:-getforms}@postgres:5432/getforms
+      DATABASE_URL: postgresql://getforms:${POSTGRES_PASSWORD}@postgres:5432/getforms
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/data:/app/data
