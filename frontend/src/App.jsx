@@ -12,7 +12,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom"
-import axios from "axios"
+import { authApi } from "@/lib/api"
 import { useAuth } from "@/contexts/AuthContext"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
@@ -30,8 +30,6 @@ import Submissions from "@/pages/Submissions"
 import { Toaster } from "@/components/ui/toaster"
 import { UnreadProvider } from "@/contexts/UnreadContext"
 import { ThemeProvider } from "@/contexts/ThemeContext"
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
 
 function DashboardLayout() {
   return (
@@ -67,7 +65,7 @@ function SetupGuard({ children }) {
 
     async function check(attempt = 0) {
       try {
-        const { data } = await axios.get(`${API_BASE}/api/auth/setup-status`)
+        const { data } = await authApi.setupStatus()
         if (cancelled) return
         if (data.needsSetup && location.pathname !== "/setup") {
           navigate("/setup", { replace: true })

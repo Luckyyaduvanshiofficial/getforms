@@ -5,9 +5,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import axios from 'axios'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+import { authApi } from '@/lib/api'
 
 export default function Setup() {
   const { loginWithToken } = useAuth()
@@ -28,7 +26,7 @@ export default function Setup() {
     }
     setLoading(true)
     try {
-      const { data } = await axios.post(`${API_BASE}/api/auth/setup`, { username, password })
+      const { data } = await authApi.setup(username, password)
       loginWithToken(data.token, data.user)
       navigate('/dashboard')
     } catch (err) {

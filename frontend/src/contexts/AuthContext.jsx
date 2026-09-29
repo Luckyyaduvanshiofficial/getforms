@@ -3,10 +3,7 @@
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
-const TOKEN_KEY = 'getforms_token';
+import { authApi, TOKEN_KEY } from '@/lib/api';
 
 const AuthContext = createContext(null);
 
@@ -16,9 +13,7 @@ export function AuthProvider({ children }) {
 
   const fetchMe = useCallback(async (token) => {
     try {
-      const { data } = await axios.get(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await authApi.me(token);
       setUser(data.user);
     } catch {
       localStorage.removeItem(TOKEN_KEY);
@@ -36,7 +31,7 @@ export function AuthProvider({ children }) {
   }, [fetchMe]);
 
   const login = useCallback(async (username, password) => {
-    const { data } = await axios.post(`${API_BASE}/api/auth/login`, { username, password });
+    const { data } = await authApi.login(username, password);
     localStorage.setItem(TOKEN_KEY, data.token);
     setUser(data.user);
     return data.user;

@@ -65,6 +65,25 @@ api.interceptors.response.use(
   }
 )
 
+// Auth API — separate client without the 401 redirect interceptor,
+// so failed logins surface errors instead of reloading to /login
+const authClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 15000,
+})
+
+export const authApi = {
+  login: (username, password) => authClient.post("/api/auth/login", { username, password }),
+  setup: (username, password) => authClient.post("/api/auth/setup", { username, password }),
+  me: (token) => authClient.get("/api/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  }),
+  setupStatus: () => authClient.get("/api/auth/setup-status"),
+}
+
 // Forms API
 export const formsApi = {
   getAll: () => api.get("/api/forms"),
