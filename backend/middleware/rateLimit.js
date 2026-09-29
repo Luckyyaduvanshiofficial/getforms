@@ -5,9 +5,11 @@
 // In-memory rate limiting — no Redis required.
 
 export function getRequestIp(request) {
+  // Prefer Fastify's request.ip (respects trustProxy) so clients can't
+  // spoof X-Forwarded-For to bypass rate limits in dev.
   return (
-    request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     request.ip ||
+    request.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
     '127.0.0.1'
   );
 }

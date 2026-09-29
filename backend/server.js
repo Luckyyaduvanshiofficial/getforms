@@ -62,7 +62,7 @@ fastify.addHook('onRequest', async (request, reply) => {
   const url    = request.url;
 
   if (url.startsWith('/f/') || url.startsWith('/uploads/')) {
-    reply.header('Access-Control-Allow-Origin', origin || '*');
+    reply.header('Access-Control-Allow-Origin', '*');
     reply.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     reply.header('Access-Control-Allow-Headers', 'Content-Type, Accept');
     if (request.method === 'OPTIONS') { reply.status(204).send(); return; }
