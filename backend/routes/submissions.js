@@ -341,7 +341,11 @@ export default async function submissionRoutes(fastify) {
       const sub = await getOwnedSubmission(request.params.submissionId, request.user.userId);
       if (!sub) return reply.status(404).send({ error: 'Submission not found' });
 
-      await sql`UPDATE submissions SET notes = ${request.body?.notes || null} WHERE id = ${sub.id}`;
+      const notes = request.body?.notes;
+      if (notes != null && String(notes).length > 10000) {
+        return reply.status(400).send({ error: 'Notes too long (max 10000 chars)' });
+      }
+      await sql`UPDATE submissions SET notes = ${notes || null} WHERE id = ${sub.id}`;
       return { success: true };
     } catch (err) {
       console.error('Error updating notes:', err);

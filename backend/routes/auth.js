@@ -5,6 +5,8 @@
 import sql from '../utils/db.js';
 import { signToken, hashPassword, checkPassword } from '../utils/auth.js';
 import { getTransportForUser, getFromForUser } from '../utils/mailer.js';
+import { normalizeSingleEmail } from '../utils/emailSecurity.js';
+import { validateWebhookUrl } from '../utils/validation.js';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -111,16 +113,49 @@ export default async function authRoutes(fastify) {
     const { name, email, password, currentPassword, notify_email, telegram_bot_token, telegram_chat_id, slack_webhook_url, smtp_config } = request.body || {};
     const updates = {};
 
-    if (name !== undefined) updates.name = String(name).trim() || null;
-    if (notify_email !== undefined) updates.notify_email = String(notify_email).trim().toLowerCase() || null;
-    if (telegram_bot_token !== undefined) updates.telegram_bot_token = String(telegram_bot_token).trim() || null;
-    if (telegram_chat_id !== undefined) updates.telegram_chat_id = String(telegram_chat_id).trim() || null;
-    if (slack_webhook_url !== undefined) updates.slack_webhook_url = String(slack_webhook_url).trim() || null;
+    if (name !== undefined) updates.name = String(name).trim().slice(0, 100) || null;
+    if (notify_email !== undefined) {
+      const raw = String(notify_email).trim().toLowerCase();
+      if (!raw) {
+        updates.notify_email = null;
+      } else {
+        const emailCheck = normalizeSingleEmail(raw, { fieldName: 'notify_email', allowEmpty: false });
+        if (!emailCheck.valid) return reply.status(400).send({ error: 'Invalid notify_email', message: emailCheck.error });
+        updates.notify_email = emailCheck.normalized;
+      }
+    }
+    if (telegram_bot_token !== undefined) updates.telegram_bot_token = String(telegram_bot_token).trim().slice(0, 200) || null;
+    if (telegram_chat_id !== undefined) updates.telegram_chat_id = String(telegram_chat_id).trim().slice(0, 100) || null;
+    if (slack_webhook_url !== undefined) {
+      const rawSlack = String(slack_webhook_url).trim();
+      if (!rawSlack) {
+        updates.slack_webhook_url = null;
+      } else {
+        const urlVal = await validateWebhookUrl(rawSlack, { requireHttps: true });
+        if (!urlVal.valid) return reply.status(400).send({ error: 'Invalid slack_webhook_url', message: urlVal.error });
+        updates.slack_webhook_url = rawSlack;
+      }
+    }
 
     if (smtp_config !== undefined) {
       if (smtp_config === null) {
         updates.smtp_config = null;
       } else {
+        if (typeof smtp_config !== 'object' || Array.isArray(smtp_config)) {
+          return reply.status(400).send({ error: 'Invalid smtp_config', message: 'smtp_config must be an object' });
+        }
+        const smtpHost = smtp_config.host?.trim() || null;
+        const smtpPort = smtp_config.port === undefined || smtp_config.port === null || smtp_config.port === ''
+          ? 587
+          : Number(smtp_config.port);
+        if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) {
+          return reply.status(400).send({ error: 'Invalid smtp_config', message: 'SMTP port must be 1-65535' });
+        }
+        const smtpFrom = smtp_config.from?.trim() || null;
+        if (smtpFrom) {
+          const fromCheck = normalizeSingleEmail(smtpFrom, { fieldName: 'smtp_config.from', allowDisplayName: true, allowEmpty: false });
+          if (!fromCheck.valid) return reply.status(400).send({ error: 'Invalid smtp_config', message: fromCheck.error });
+        }
         // If pass is the masked placeholder, keep existing password
         let existingPass = null;
         if (smtp_config.pass === '••••••••') {
@@ -128,23 +163,27 @@ export default async function authRoutes(fastify) {
           existingPass = existingRow?.smtp_config?.pass ?? null;
         }
         updates.smtp_config = JSON.stringify({
-          host:   smtp_config.host?.trim()   || null,
-          port:   Number(smtp_config.port)   || 587,
+          host:   smtpHost?.slice(0, 255) || null,
+          port:   smtpPort,
           secure: !!smtp_config.secure,
-          user:   smtp_config.user?.trim()   || null,
-          pass:   smtp_config.pass === '••••••••' ? existingPass : (smtp_config.pass?.trim() || null),
-          from:   smtp_config.from?.trim()   || null,
+          user:   smtp_config.user?.trim().slice(0, 320)   || null,
+          pass:   smtp_config.pass === '••••••••' ? existingPass : (smtp_config.pass?.trim().slice(0, 1024) || null),
+          from:   smtpFrom,
         });
       }
     }
 
     if (email !== undefined) {
       const normalizedEmail = String(email).trim().toLowerCase();
+      if (normalizedEmail) {
+        const emailCheck = normalizeSingleEmail(normalizedEmail, { fieldName: 'email', allowEmpty: false });
+        if (!emailCheck.valid) return reply.status(400).send({ error: 'Invalid email', message: emailCheck.error });
+      }
       const [existing] = await sql`
         SELECT id FROM users WHERE email = ${normalizedEmail} AND id != ${request.user.userId}
       `;
       if (existing) return reply.status(409).send({ error: 'Email already in use' });
-      updates.email = normalizedEmail;
+      updates.email = normalizedEmail || null;
     }
 
     if (password !== undefined) {
