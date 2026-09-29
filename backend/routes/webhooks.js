@@ -107,7 +107,7 @@ export default async function webhookRoutes(fastify) {
         return reply.status(400).send({ error: 'Form has no webhook URL configured' });
       }
 
-      const urlVal = await validateWebhookUrl(log.webhook_url);
+      const urlVal = await validateWebhookUrl(log.webhook_url, { requireHttps: true });
       if (!urlVal.valid) {
         return reply.status(400).send({ error: 'Webhook URL failed security validation' });
       }
