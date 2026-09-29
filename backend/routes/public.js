@@ -455,6 +455,7 @@ export default async function publicRoutes(fastify) {
 
       // Return redirect or JSON
       const isJsSubmission = request.body?._getforms_js || request.body?._formto_js || request.body?._js;
+      const acceptsHtml = String(request.headers.accept || '').includes('text/html');
       if (form.redirect_url && (acceptsHtml || !isJsSubmission)) {
         return reply.redirect(302, form.redirect_url);
       }
