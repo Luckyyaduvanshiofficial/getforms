@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -24,44 +23,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import StatusStamp from "@/components/StatusStamp"
 import { submissionsApi } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
-import { formatDate, truncate, isValidUrl } from "@/lib/utils"
+import { formatDate, truncate, isValidUrl, formatNumber } from "@/lib/utils"
 import { useUnread } from "@/contexts/UnreadContext"
-
-const STATUS_CONFIG = {
-  new: { label: "New", color: "bg-blue-500", badge: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800" },
-  in_progress: { label: "In Progress", color: "bg-amber-400", badge: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800" },
-  resolved: { label: "Resolved", color: "bg-green-500", badge: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800" },
-}
 
 const STATUS_FILTERS = [
   { value: "all", label: "All" },
   { value: "new", label: "New" },
-  { value: "in_progress", label: "In Progress" },
+  { value: "in_progress", label: "In progress" },
   { value: "resolved", label: "Resolved" },
 ]
-
-function StatusDot({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.new
-  return (
-    <span className="relative flex h-2.5 w-2.5 flex-shrink-0 items-center justify-center">
-      {status === 'new' && (
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-      )}
-      <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.color}`} />
-    </span>
-  )
-}
-
-function StatusBadge({ status }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.new
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border ${cfg.badge}`}>
-      {cfg.label}
-    </span>
-  )
-}
 
 function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
   const [expanded, setExpanded] = useState(false)
@@ -75,11 +48,16 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
   const [sendingReply, setSendingReply] = useState(false)
   const notesTimer = useRef(null)
 
+  const panelId = `submission-panel-${submission.id}`
+  const notesId = `submission-notes-${submission.id}`
+  const replySubjectId = `submission-reply-subject-${submission.id}`
+  const replyMessageId = `submission-reply-message-${submission.id}`
+
   const fields = Object.entries(submission.data || {})
   const fileUrls = submission.file_urls || []
   const hasEmail = fields.some(([k]) => k.toLowerCase().includes("email"))
 
-  const handleExpand = () => {
+  const handleToggle = () => {
     const next = !expanded
     setExpanded(next)
     if (next && !isRead) {
@@ -97,7 +75,11 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
       onStatusChange(submission.id, newStatus)
     } catch {
       setStatus(prev)
-      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" })
+      toast({
+        title: "Status not saved",
+        description: "The server rejected the change. Try again in a moment.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -105,14 +87,22 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
     if (!replySubject.trim() || !replyMessage.trim()) return
     setSendingReply(true)
     try {
-      await submissionsApi.reply(submission.id, { subject: replySubject, message: replyMessage })
-      toast({ title: "Reply sent", description: "Your message was sent to the submitter." })
+      await submissionsApi.reply(submission.id, {
+        subject: replySubject,
+        message: replyMessage,
+      })
+      toast({ title: "Reply sent" })
       setShowReply(false)
       setReplySubject("")
       setReplyMessage("")
     } catch (err) {
-      const msg = err?.response?.data?.error || "Failed to send reply."
-      toast({ title: "Error", description: msg, variant: "destructive" })
+      toast({
+        title: "Reply not sent",
+        description:
+          err?.response?.data?.error ||
+          "The mail server rejected the message. Check your SMTP settings.",
+        variant: "destructive",
+      })
     } finally {
       setSendingReply(false)
     }
@@ -126,7 +116,11 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
       try {
         await submissionsApi.updateNotes(submission.id, value)
       } catch {
-        toast({ title: "Notes not saved", description: "Failed to save notes. Please try again.", variant: "destructive" })
+        toast({
+          title: "Note not saved",
+          description: "The server rejected the note. Try again in a moment.",
+          variant: "destructive",
+        })
       } finally {
         setSavingNotes(false)
       }
@@ -140,210 +134,248 @@ function SubmissionRow({ submission, onArchive, onStatusChange, onRead }) {
   }, [])
 
   return (
-    <Card className={`bezel-card mb-2.5 transition-all overflow-hidden ${status === "resolved" ? "opacity-60" : ""} ${!isRead ? "border-l-4 border-l-primary bg-primary/[0.02]" : "border-border/80"}`}>
-      <CardContent className="p-0">
-        {/* Row header */}
-        <div
-          className="flex items-center gap-3.5 px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors"
-          onClick={handleExpand}
+    <li
+      className={`border-b border-border last:border-b-0 ${
+        isRead ? "" : "bg-primary/[0.035]"
+      }`}
+    >
+      {/*
+        The row header is a real <button>. It used to be a <div onClick>, so the
+        mouse could expand a submission and the keyboard could not reach it at all.
+      */}
+      <button
+        type="button"
+        onClick={handleToggle}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-3 px-3 py-3 text-start transition-colors hover:bg-accent/40"
+      >
+        <span className="sr-only">{isRead ? "Read." : "Unread."}</span>
+        <span className="flex w-2 shrink-0 justify-center" aria-hidden="true">
+          {!isRead && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+        </span>
+
+        <span className="shrink-0 rounded-sm border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+          {submission.form_name || "unknown"}
+        </span>
+
+        <span
+          className={`min-w-0 flex-1 truncate text-sm ${
+            isRead ? "text-muted-foreground" : "font-medium text-foreground"
+          }`}
         >
-          <StatusDot status={status} />
+          {fields.length > 0
+            ? truncate(
+                fields
+                  .slice(0, 2)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join("  ·  "),
+                80
+              )
+            : "No field data"}
+        </span>
 
-          {/* Form name badge */}
-          <span className="text-[11px] font-mono font-medium bg-muted/80 px-2 py-0.5 rounded-md text-muted-foreground whitespace-nowrap border border-border/50">
-            {submission.form_name || "Unknown form"}
+        {fileUrls.length > 0 && (
+          <span className="hidden shrink-0 items-center gap-1 font-mono text-xs text-muted-foreground sm:flex">
+            <Paperclip className="h-3 w-3" aria-hidden="true" />
+            {fileUrls.length}
+            <span className="sr-only"> attachments</span>
           </span>
+        )}
 
-          {/* Data preview */}
-          <span className={`flex-1 text-sm truncate min-w-0 ${!isRead ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-            {fields.length > 0
-              ? truncate(fields.slice(0, 2).map(([k, v]) => `${k}: ${v}`).join("  ·  "), 80)
-              : "No data"}
-          </span>
+        <StatusStamp status={status} className="hidden sm:inline-flex" />
 
-          {/* Attachments */}
-          {fileUrls.length > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap font-mono bg-muted/50 px-1.5 py-0.5 rounded">
-              <Paperclip className="h-3 w-3" />
-              {fileUrls.length}
-            </span>
-          )}
+        <span className="hidden shrink-0 font-mono text-xs text-muted-foreground md:inline">
+          {formatDate(submission.created_at)}
+        </span>
 
-          {/* Status badge */}
-          <div className="hidden sm:block">
-            <StatusBadge status={status} />
-          </div>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 ${
+            expanded ? "rotate-180" : ""
+          }`}
+          aria-hidden="true"
+        />
+      </button>
 
-          {/* Date */}
-          <span className="text-xs text-muted-foreground whitespace-nowrap font-mono hidden md:block">
-            {formatDate(submission.created_at)}
-          </span>
+      {expanded && (
+        <div id={panelId} className="space-y-4 border-t border-border px-3 py-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="ledger-label">Status</span>
+            <Select value={status} onValueChange={handleStatusChange}>
+              <SelectTrigger className="h-8 w-[150px] text-xs" aria-label="Submission status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="in_progress">In progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <ChevronDown className={`h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform duration-200 ${expanded ? "rotate-180 text-foreground" : ""}`} />
-        </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => onArchive(submission.id)}
+            >
+              <Archive className="h-3.5 w-3.5" aria-hidden="true" />
+              Archive
+            </Button>
 
-        {/* Expanded detail */}
-        {expanded && (
-          <div className="border-t px-4 py-4 space-y-4">
-            {/* Actions row */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Status:</span>
-                <Select value={status} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="h-7 text-xs w-[130px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="resolved">Resolved</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
+            {hasEmail && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={() => onArchive(submission.id)}
+                className="text-muted-foreground"
+                onClick={() => setShowReply((v) => !v)}
+                aria-expanded={showReply}
               >
-                <Archive className="h-3.5 w-3.5 mr-1.5" />
-                Archive
+                <Reply className="h-3.5 w-3.5" aria-hidden="true" />
+                Reply
               </Button>
+            )}
 
-              {hasEmail && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-muted-foreground"
-                  onClick={(e) => { e.stopPropagation(); setShowReply((v) => !v) }}
-                >
-                  <Reply className="h-3.5 w-3.5 mr-1.5" />
-                  Reply
-                </Button>
-              )}
+            <Link
+              to={`/forms/${submission.form_id}`}
+              className="ms-auto flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              Open endpoint
+            </Link>
+          </div>
 
-              <Link
-                to={`/forms/${submission.form_id}`}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Open form
-              </Link>
-            </div>
+          <dl className="divide-y divide-border border-y border-border">
+            {fields.map(([key, value]) => (
+              <div key={key} className="grid gap-1 py-2 sm:grid-cols-[10rem_1fr] sm:gap-4">
+                <dt className="font-mono text-xs text-muted-foreground">{key}</dt>
+                <dd className="break-anywhere text-sm">
+                  {typeof value === "object"
+                    ? JSON.stringify(value, null, 2)
+                    : String(value)}
+                </dd>
+              </div>
+            ))}
+          </dl>
 
-            {/* Fields */}
-            <div className="grid gap-2">
-              {fields.map(([key, value]) => (
-                <div key={key} className="grid grid-cols-4 gap-3 text-sm">
-                  <span className="font-medium text-muted-foreground capitalize col-span-1">{key}</span>
-                  <span className="col-span-3 break-words">
-                    {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Attachments */}
-            {fileUrls.length > 0 && (
-              <div className="pt-2 border-t space-y-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Attachments</span>
+          {fileUrls.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="ledger-label">Attachments</span>
+              <ul className="space-y-1.5">
                 {fileUrls.map((file, i) => {
                   const href = file.url || file
-                  return isValidUrl(href) ? (
-                    <a
-                      key={i}
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                      <Download className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">{file.name || `File ${i + 1}`}</span>
-                      {file.size && (
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {(file.size / 1024).toFixed(1)} KB
+                  const name = file.name || `File ${i + 1}`
+                  return (
+                    <li key={i}>
+                      {isValidUrl(href) ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-primary underline-offset-4 hover:underline"
+                        >
+                          <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{name}</span>
+                          {file.size && (
+                            <span className="ms-auto font-mono text-xs text-muted-foreground">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </span>
+                          )}
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{name}</span>
                         </span>
                       )}
-                    </a>
-                  ) : (
-                    <span key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Download className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">{file.name || `File ${i + 1}`}</span>
-                    </span>
+                    </li>
                   )
                 })}
-              </div>
-            )}
-
-            {/* Metadata */}
-            <div className="grid grid-cols-4 gap-3 text-sm pt-2 border-t">
-              <span className="text-muted-foreground">IP Address</span>
-              <span className="col-span-3">{submission.metadata?.ip || "N/A"}</span>
-              <span className="text-muted-foreground">Received</span>
-              <span className="col-span-3">{formatDate(submission.created_at)}</span>
-              {submission.metadata?.referer && isValidUrl(submission.metadata.referer) && (
-                <>
-                  <span className="text-muted-foreground">Source</span>
-                  <span className="col-span-3 truncate">
-                    <a href={submission.metadata.referer} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      {submission.metadata.referer}
-                    </a>
-                  </span>
-                </>
-              )}
+              </ul>
             </div>
+          )}
 
-            {/* Notes */}
-            <div className="pt-2 border-t space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Internal notes</span>
-                {savingNotes && (
-                  <span className="text-xs text-muted-foreground">Saving…</span>
-                )}
-              </div>
-              <textarea
-                className="w-full text-sm bg-muted/40 border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/60"
-                rows={3}
-                placeholder="Add a note about this submission…"
-                value={notes}
-                onChange={(e) => handleNotesChange(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-
-            {/* Reply form */}
-            {showReply && (
-              <div className="pt-2 border-t space-y-2" onClick={(e) => e.stopPropagation()}>
-                <span className="text-xs font-medium text-muted-foreground">Reply to submitter</span>
-                <Input
-                  placeholder="Subject"
-                  value={replySubject}
-                  onChange={(e) => setReplySubject(e.target.value)}
-                />
-                <textarea
-                  className="w-full text-sm bg-muted/40 border border-border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/60"
-                  rows={4}
-                  placeholder="Your message…"
-                  value={replyMessage}
-                  onChange={(e) => setReplyMessage(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" disabled={sendingReply || !replySubject.trim() || !replyMessage.trim()} onClick={handleSendReply}>
-                    {sendingReply ? <Loader2 className="h-3 w-3 mr-1.5 animate-spin" /> : <Send className="h-3 w-3 mr-1.5" />}
-                    Send
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowReply(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+          <dl className="grid gap-2 text-sm sm:grid-cols-[10rem_1fr] sm:gap-x-4">
+            <dt className="font-mono text-xs text-muted-foreground">IP address</dt>
+            <dd>{submission.metadata?.ip || "not recorded"}</dd>
+            <dt className="font-mono text-xs text-muted-foreground">Received</dt>
+            <dd>{formatDate(submission.created_at)}</dd>
+            {submission.metadata?.referer && isValidUrl(submission.metadata.referer) && (
+              <>
+                <dt className="font-mono text-xs text-muted-foreground">Source</dt>
+                <dd className="break-anywhere">
+                  <a
+                    href={submission.metadata.referer}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    {submission.metadata.referer}
+                  </a>
+                </dd>
+              </>
             )}
+          </dl>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor={notesId} className="ledger-label">
+                Internal note
+              </label>
+              <span role="status" className="text-xs text-muted-foreground">
+                {savingNotes ? "Saving…" : ""}
+              </span>
+            </div>
+            <textarea
+              id={notesId}
+              rows={3}
+              className="w-full resize-y rounded-sm border border-input bg-card px-2.5 py-2 text-base placeholder:text-muted-foreground/70 sm:text-sm"
+              placeholder="Only your team sees this."
+              value={notes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+            />
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          {showReply && (
+            <div className="space-y-2 border-t border-border pt-3">
+              <p className="ledger-label">Reply to submitter</p>
+              <label htmlFor={replySubjectId} className="sr-only">
+                Reply subject
+              </label>
+              <Input
+                id={replySubjectId}
+                placeholder="Subject"
+                value={replySubject}
+                onChange={(e) => setReplySubject(e.target.value)}
+              />
+              <label htmlFor={replyMessageId} className="sr-only">
+                Reply message
+              </label>
+              <textarea
+                id={replyMessageId}
+                rows={4}
+                className="w-full resize-y rounded-sm border border-input bg-card px-2.5 py-2 text-base placeholder:text-muted-foreground/70 sm:text-sm"
+                placeholder="Your message"
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={sendingReply || !replySubject.trim() || !replyMessage.trim()}
+                  onClick={handleSendReply}
+                >
+                  {sendingReply && <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />}
+                  {sendingReply ? "Sending" : "Send reply"}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowReply(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </li>
   )
 }
 
@@ -373,9 +405,13 @@ export default function Submissions() {
       setSubmissions(data.submissions || [])
       setForms(data.forms || [])
       setPagination(data.pagination || { page: 1, limit: 50, total: 0, pages: 0 })
-    } catch (error) {
+    } catch {
       if (generation !== fetchGeneration.current) return
-      console.error("Failed to fetch submissions:", error)
+      toast({
+        title: "Could not load submissions",
+        description: "The server did not respond. Check your connection and try again.",
+        variant: "destructive",
+      })
     } finally {
       if (generation === fetchGeneration.current) setLoading(false)
     }
@@ -399,9 +435,13 @@ export default function Submissions() {
     try {
       await submissionsApi.archive(id)
       setSubmissions((prev) => prev.filter((s) => s.id !== id))
-      toast({ title: "Archived", description: "Submission moved to archive." })
+      toast({ title: "Submission archived" })
     } catch {
-      toast({ title: "Error", description: "Failed to archive.", variant: "destructive" })
+      toast({
+        title: "Could not archive",
+        description: "The server rejected the request. Try again in a moment.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -422,75 +462,93 @@ export default function Submissions() {
     setMarkingAll(true)
     try {
       await submissionsApi.markAllRead(formFilter !== "all" ? formFilter : undefined)
-      setSubmissions((prev) => prev.map((s) => ({ ...s, read_at: s.read_at || new Date().toISOString() })))
+      setSubmissions((prev) =>
+        prev.map((s) => ({ ...s, read_at: s.read_at || new Date().toISOString() }))
+      )
       reset()
-      toast({ title: "Done", description: "All submissions marked as read." })
+      toast({ title: "All submissions marked read" })
     } catch {
-      toast({ title: "Error", description: "Failed to mark all as read.", variant: "destructive" })
+      toast({
+        title: "Could not mark all read",
+        description: "The server rejected the request. Try again in a moment.",
+        variant: "destructive",
+      })
     } finally {
       setMarkingAll(false)
     }
   }
 
+  const isFiltering = statusFilter !== "all" || formFilter !== "all"
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Submissions</h1>
-          <p className="text-muted-foreground mt-1">
-            All submissions across your forms
-            {!loading && pagination.total > 0 && (
-              <span className="ml-2 text-sm">— {pagination.total} total</span>
+          <div className="flex items-baseline gap-2">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Inbox</h1>
+            {!loading && (
+              <span className="ledger-label">
+                {formatNumber(pagination.total)} total
+              </span>
             )}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Every submission recorded across your endpoints.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {unreadCount > 0 && (
-            <span className="text-sm font-medium bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full">
-              {unreadCount} unread
-            </span>
-          )}
-          {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={markingAll}
-              onClick={handleMarkAllRead}
-            >
-              {markingAll ? "Marking…" : "Mark all as read"}
-            </Button>
+            <>
+              <span className="stamp border-primary/40 bg-primary/10 text-primary">
+                {formatNumber(unreadCount)} unread
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={markingAll}
+                onClick={handleMarkAllRead}
+              >
+                {markingAll ? "Marking" : "Mark all read"}
+              </Button>
+            </>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Status tabs */}
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => handleStatusFilterChange(f.value)}
-              className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                statusFilter === f.value
-                  ? "bg-background text-foreground shadow-sm font-medium"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Status filter: a pressed-state group, not a fake tab bar. */}
+        <div
+          role="group"
+          aria-label="Filter by status"
+          className="flex items-center gap-0.5 rounded-sm border border-border bg-muted p-0.5"
+        >
+          {STATUS_FILTERS.map((f) => {
+            const active = statusFilter === f.value
+            return (
+              <button
+                key={f.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => handleStatusFilterChange(f.value)}
+                className={`rounded-sm px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-card text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {f.label}
+              </button>
+            )
+          })}
         </div>
 
-        {/* Form filter */}
         {forms.length > 1 && (
           <Select value={formFilter} onValueChange={handleFormFilterChange}>
-            <SelectTrigger className="h-9 text-sm w-[180px]">
-              <SelectValue placeholder="All forms" />
+            <SelectTrigger className="h-9 w-[200px] text-sm" aria-label="Filter by endpoint">
+              <SelectValue placeholder="All endpoints" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All forms</SelectItem>
+              <SelectItem value="all">All endpoints</SelectItem>
               {forms.map((f) => (
                 <SelectItem key={f.id} value={f.id}>
                   {f.name}
@@ -501,50 +559,68 @@ export default function Submissions() {
         )}
       </div>
 
-      {/* List */}
+      <p role="status" className="sr-only">
+        {loading
+          ? "Loading submissions"
+          : `${submissions.length} submissions shown of ${pagination.total}`}
+      </p>
+
       {loading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 bg-muted animate-pulse rounded-lg" />
+        <div className="ledger-sheet divide-y divide-border">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="px-3 py-3.5">
+              <div className="h-5 w-3/4 animate-pulse rounded-sm bg-muted" aria-hidden="true" />
+            </div>
           ))}
         </div>
       ) : submissions.length === 0 ? (
-        <Card className="bezel-card border-dashed">
-          <CardContent className="py-16 text-center max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-xl bg-muted/60 border border-border flex items-center justify-center mx-auto mb-3">
-              <Archive className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-base font-semibold text-foreground">No submissions found</p>
-            <p className="text-sm text-muted-foreground mt-1 mb-5">
-              {statusFilter !== "all" || formFilter !== "all"
-                ? "Try adjusting the filters above to view more entries."
-                : "Your forms are live and ready. Submissions will appear here the moment a visitor fills out your form."}
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button asChild size="sm">
-                <Link to="/forms">View Active Forms</Link>
+        <div className="ledger-sheet px-5 py-14 text-center">
+          <p className="text-sm font-medium">
+            {isFiltering ? "No submissions match those filters" : "Nothing recorded yet"}
+          </p>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+            {isFiltering
+              ? "Reset the filters to see the full register."
+              : "Your endpoints are live. Submissions appear here within a second of arriving."}
+          </p>
+          <div className="mt-5 flex justify-center gap-2">
+            {isFiltering ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("all")
+                  setFormFilter("all")
+                  setPage(1)
+                }}
+              >
+                Reset filters
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            ) : (
+              <Button asChild>
+                <Link to="/forms">View endpoints</Link>
+              </Button>
+            )}
+          </div>
+        </div>
       ) : (
         <>
-          <div>
-            {submissions.map((submission) => (
-              <SubmissionRow
-                key={submission.id}
-                submission={submission}
-                onArchive={handleArchive}
-                onStatusChange={handleStatusChange}
-                onRead={handleRead}
-              />
-            ))}
+          <div className="ledger-sheet overflow-hidden">
+            <ul role="list">
+              {submissions.map((submission) => (
+                <SubmissionRow
+                  key={submission.id}
+                  submission={submission}
+                  onArchive={handleArchive}
+                  onStatusChange={handleStatusChange}
+                  onRead={handleRead}
+                />
+              ))}
+            </ul>
           </div>
 
-          {/* Pagination */}
           {pagination.pages > 1 && (
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-sm text-muted-foreground">
+            <nav aria-label="Pagination" className="flex items-center justify-between pt-1">
+              <p className="font-mono text-xs text-muted-foreground">
                 Page {pagination.page} of {pagination.pages}
               </p>
               <div className="flex gap-2">
@@ -565,7 +641,7 @@ export default function Submissions() {
                   Next
                 </Button>
               </div>
-            </div>
+            </nav>
           )}
         </>
       )}

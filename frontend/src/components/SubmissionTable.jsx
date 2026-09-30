@@ -76,7 +76,7 @@ function SubmissionRow({ submission, onArchive, onRestore, onDeletePermanent, is
               )}
               {fileUrls.length > 0 && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Paperclip className="h-3 w-3" />
+                  <Paperclip className="h-3 w-3" aria-hidden="true" />
                   {fileUrls.length} file{fileUrls.length > 1 ? "s" : ""}
                 </span>
               )}
@@ -86,42 +86,44 @@ function SubmissionRow({ submission, onArchive, onRestore, onDeletePermanent, is
             <Button
               variant="ghost"
               size="icon"
+              aria-expanded={expanded}
+              aria-label={expanded ? "Collapse submission" : "Expand submission"}
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? (
-                <ChevronUp className="h-4 w-4" />
+                <ChevronUp className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4" aria-hidden="true" />
               )}
             </Button>
             {isArchived && onRestore && (
               <Button
                 variant="ghost"
                 size="icon"
-                title="Restore submission"
+                aria-label="Restore submission"
                 onClick={() => onRestore(submission.id)}
               >
-                <RotateCcw className="h-4 w-4 text-green-600" />
+                <RotateCcw className="h-4 w-4 text-status-resolved" aria-hidden="true" />
               </Button>
             )}
             {!isArchived && onArchive && (
               <Button
                 variant="ghost"
                 size="icon"
-                title="Archive submission"
+                aria-label="Archive submission"
                 onClick={handleActionClick}
               >
-                <Archive className="h-4 w-4 text-muted-foreground" />
+                <Archive className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </Button>
             )}
             {isArchived && onDeletePermanent && (
               <Button
                 variant="ghost"
                 size="icon"
-                title="Delete permanently"
+                aria-label="Delete submission permanently"
                 onClick={handleActionClick}
               >
-                <Trash2 className="h-4 w-4 text-destructive" />
+                <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
               </Button>
             )}
           </div>
