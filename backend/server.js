@@ -18,8 +18,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendDist = path.resolve(__dirname, '..', 'frontend', 'dist');
 
-import { authMiddleware, optionalAuthMiddleware } from './middleware/auth.js';
-import { getRequestIp, rateLimitPresets, spamDetectionMiddleware, honeypotDetectionMiddleware } from './middleware/rateLimit.js';
+import { authMiddleware } from './middleware/auth.js';
+import { getRequestIp, rateLimitPresets } from './middleware/rateLimit.js';
 
 import authRoutes       from './routes/auth.js';
 import formRoutes       from './routes/forms.js';
@@ -117,7 +117,6 @@ await fastify.register(rateLimit, {
 // ─── Decorate with middleware ─────────────────────────────────────────────────
 
 fastify.decorate('auth',                  authMiddleware);
-fastify.decorate('optionalAuth',          optionalAuthMiddleware);
 fastify.decorate('rateLimitFormSubmission', rateLimitPresets.formSubmission);
 fastify.decorate('rateLimitSensitive',    rateLimitPresets.sensitive);
 fastify.decorate('rateLimitExport',       rateLimitPresets.export);
@@ -125,8 +124,6 @@ fastify.decorate('rateLimitWebhookTest',  rateLimitPresets.webhookTest);
 fastify.decorate('rateLimitWebhookRetry', rateLimitPresets.webhookRetry);
 fastify.decorate('rateLimitReplyEmail',   rateLimitPresets.replyEmail);
 fastify.decorate('rateLimitAuth',         rateLimitPresets.auth);
-fastify.decorate('spamDetection',         spamDetectionMiddleware);
-fastify.decorate('honeypotDetection',     honeypotDetectionMiddleware);
 
 // ─── Request logging ──────────────────────────────────────────────────────────
 

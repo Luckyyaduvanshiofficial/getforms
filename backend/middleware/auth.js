@@ -22,23 +22,3 @@ export async function authMiddleware(request, reply) {
     return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid or expired token' });
   }
 }
-
-export async function optionalAuthMiddleware(request, reply) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    request.user = null;
-    return;
-  }
-
-  const token = authHeader.slice(7);
-  try {
-    const payload = await verifyToken(token);
-    request.user = {
-      userId: payload.userId,
-      email:  payload.email,
-      name:   payload.name
-    };
-  } catch {
-    request.user = null;
-  }
-}
