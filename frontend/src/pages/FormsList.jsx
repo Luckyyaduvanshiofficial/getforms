@@ -2,20 +2,25 @@
 // Licensed under the Apache License, Version 2.0.
 // Original source: https://github.com/Luckyyaduvanshiofficial/getforms
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Link } from "react-router-dom"
-import { Plus, Search, FileText } from "lucide-react"
+import { Plus, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import FormCard from "@/components/FormCard"
 import { formsApi } from "@/lib/api"
 import { toast } from "@/hooks/use-toast"
+import { formatNumber } from "@/lib/utils"
 
+/*
+ * Compare surface: endpoints read as a register, not a card grid.
+ * A grid gives every endpoint identical area and breaks column alignment,
+ * which is exactly what you need when scanning for the one that is failing.
+ */
 export default function FormsList() {
   const { user } = useAuth()
   const [forms, setForms] = useState([])
-  const [filteredForms, setFilteredForms] = useState([])
   const [search, setSearch] = useState("")
   const [tagFilter, setTagFilter] = useState("")
   const [loading, setLoading] = useState(true)
@@ -27,24 +32,14 @@ export default function FormsList() {
           setLoading(false)
           return
         }
-
-        // Load forms using API
         const response = await formsApi.getAll()
         const formsData = response.data || []
-
-        // Forms from API should already have submission_count if backend includes it
-        // If not, we can fetch it separately or use a default value
-        const formsWithCounts = formsData.map((form) => ({
-          ...form,
-          submissionCount: form.submission_count || form.submissionCount || 0,
-        }))
-
-        setForms(formsWithCounts)
-        setFilteredForms(formsWithCounts)
+        setForms(formsData)
       } catch (error) {
-        console.error("Failed to fetch forms:", error)
+        if (import.meta.env.DEV) {
+          console.error("Failed to load endpoints:", error)
+        }
         setForms([])
-        setFilteredForms([])
       } finally {
         setLoading(false)
       }
@@ -52,31 +47,37 @@ export default function FormsList() {
     fetchForms()
   }, [user])
 
-  useEffect(() => {
-    let filtered = forms
-    if (search) {
-      filtered = filtered.filter((form) =>
-        form.name.toLowerCase().includes(search.toLowerCase())
+  const allTags = useMemo(() => {
+    const set = new Set()
+    forms.forEach((f) => f.tags?.forEach((t) => set.add(t)))
+    return [...set].sort()
+  }, [forms])
+
+  const filteredForms = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return forms.filter((form) => {
+      if (tagFilter && !form.tags?.includes(tagFilter)) return false
+      if (!q) return true
+      return (
+        form.name?.toLowerCase().includes(q) ||
+        form.endpoint?.toLowerCase().includes(q)
       )
-    }
-    if (tagFilter) {
-      filtered = filtered.filter((form) => form.tags?.includes(tagFilter))
-    }
-    setFilteredForms(filtered)
-  }, [search, tagFilter, forms])
+    })
+  }, [forms, search, tagFilter])
+
+  const isFiltering = Boolean(search.trim() || tagFilter)
 
   const handleDelete = async (id) => {
     try {
       await formsApi.delete(id)
-      const nextForms = forms.filter((form) => form.id !== id)
-      setForms(nextForms)
-      setFilteredForms(nextForms)
-      toast({ title: "Form deleted", description: "The form has been deleted." })
+      setForms((prev) => prev.filter((form) => form.id !== id))
+      toast({ title: "Endpoint deleted" })
     } catch (error) {
-      console.error("Failed to delete form:", error)
       toast({
-        title: "Failed to delete",
-        description: error.response?.data?.message || "Something went wrong.",
+        title: "Could not delete endpoint",
+        description:
+          error.response?.data?.message ||
+          "The server rejected the request. Try again in a moment.",
         variant: "destructive",
       })
     }
@@ -84,100 +85,154 @@ export default function FormsList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border/40">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-display">Forms</h1>
-            <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-muted border border-border/60 text-muted-foreground">
-              {forms.length} total
-            </span>
+          <div className="flex items-baseline gap-2">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">
+              Endpoints
+            </h1>
+            {!loading && (
+              <span className="ledger-label">
+                {formatNumber(forms.length)} total
+              </span>
+            )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Manage your endpoints, access tokens, and webhook notification settings.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Each endpoint is a permanent URL that accepts form submissions.
           </p>
         </div>
-        <Button asChild size="default" className="shadow-sm shadow-primary/20">
-          <Link to="/forms/create" className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Form
+        <Button asChild>
+          <Link to="/forms/create">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New endpoint
           </Link>
         </Button>
-      </div>
+      </header>
 
-      {/* Filter and Search Bar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <label htmlFor="endpoint-filter" className="sr-only">
+            Filter endpoints by name or URL
+          </label>
+          <Search
+            className="pointer-events-none absolute inset-y-0 start-2.5 my-auto h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
-            placeholder="Filter forms by name..."
+            id="endpoint-filter"
+            type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-8 bg-card border-border/80 focus:border-primary text-sm h-10 rounded-xl"
+            placeholder="Name or /f/slug"
+            className="ps-8 pe-8"
           />
           {search && (
             <button
+              type="button"
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+              className="absolute inset-y-0 end-1.5 my-auto flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground"
             >
-              ×
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
         </div>
-        {tagFilter && (
-          <button
-            onClick={() => setTagFilter("")}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition-all cursor-pointer"
+
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="tag-filter" className="ledger-label">
+              Tag
+            </label>
+            <select
+              id="tag-filter"
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              className="h-9 rounded-sm border border-input bg-card px-2 text-sm text-foreground"
+            >
+              <option value="">All</option>
+              {allTags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {isFiltering && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSearch("")
+              setTagFilter("")
+            }}
+            className="text-muted-foreground"
           >
-            <span>Tag: #{tagFilter}</span>
-            <span className="text-xs">×</span>
-          </button>
+            Reset filters
+          </Button>
         )}
       </div>
 
-      {/* Forms Grid */}
+      <p role="status" className="sr-only">
+        {loading
+          ? "Loading endpoints"
+          : `${filteredForms.length} of ${forms.length} endpoints shown`}
+      </p>
+
+      {/* Register */}
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="h-44 rounded-xl bg-muted/50 border border-border/40 animate-pulse"
-            />
+        <div className="ledger-sheet divide-y divide-border">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="px-3 py-4">
+              <div className="h-8 w-2/3 animate-pulse rounded-sm bg-muted" aria-hidden="true" />
+            </div>
           ))}
         </div>
       ) : filteredForms.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredForms.map((form) => (
-            <FormCard
-              key={form.id}
-              form={form}
-              onDelete={() => handleDelete(form.id)}
-              showActions
-              onTagClick={setTagFilter}
-            />
-          ))}
+        <div className="ledger-sheet overflow-hidden">
+          <ul role="list">
+            {filteredForms.map((form) => (
+              <FormCard
+                key={form.id}
+                form={form}
+                onDelete={() => handleDelete(form.id)}
+                showActions
+              />
+            ))}
+          </ul>
         </div>
       ) : (
-        <div className="bezel-card text-center py-20 px-4 border-dashed border-border/80 rounded-2xl bg-card/50">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4 text-primary">
-            <FileText className="h-7 w-7" />
-          </div>
-          <h3 className="text-lg font-bold font-display mb-1.5">
-            {search ? "No forms found" : "No forms created yet"}
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-            {search
-              ? `No endpoints matched "${search}". Try adjusting your keywords or clearing filters.`
-              : "Create your first form endpoint in 5 seconds and start collecting submissions directly into your inbox."}
+        <div className="ledger-sheet px-5 py-12 text-center">
+          <p className="text-sm font-medium">
+            {isFiltering ? "No endpoints match those filters" : "No endpoints yet"}
           </p>
-          {!search && (
-            <Button asChild className="shadow-sm shadow-primary/25">
-              <Link to="/forms/create" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create your first form
-              </Link>
-            </Button>
-          )}
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+            {isFiltering
+              ? "Try a shorter search term, or reset the filters to see everything."
+              : "Create an endpoint, point a form at it, and submissions will start landing in your inbox."}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {isFiltering ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch("")
+                  setTagFilter("")
+                }}
+              >
+                Reset filters
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link to="/forms/create">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Create your first endpoint
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

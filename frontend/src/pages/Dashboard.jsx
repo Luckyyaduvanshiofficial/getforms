@@ -5,12 +5,36 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
-import { BarChart3, FileText, Inbox, Plus, ArrowRight } from "lucide-react"
+import { ArrowRight, Inbox, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import StatsCard from "@/components/StatsCard"
 import FormCard from "@/components/FormCard"
 import { formsApi, submissionsApi } from "@/lib/api"
-import { timeAgo, truncate } from "@/lib/utils"
+import { formatNumber, timeAgo, truncate } from "@/lib/utils"
+
+/*
+ * Composition: one register, read top to bottom.
+ *
+ * The old dashboard was four identical floating stat cards over a card grid —
+ * the median SaaS composition, and one where nothing was prioritised because
+ * everything had the same weight. This reads as a ledger instead: a ruled
+ * figure band, then the inbound record (the actual artifact), then endpoints.
+ */
+
+const EMPTY_STEPS = [
+  {
+    title: "Create an endpoint",
+    body: "Each endpoint is a permanent URL your forms post to.",
+  },
+  {
+    title: "Point a form at it",
+    body: "Set action=\"…\" on any HTML form, or POST with fetch.",
+  },
+  {
+    title: "Watch the register fill",
+    body: "Submissions land here and forward to email, Slack, Discord or a webhook.",
+  },
+]
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -32,30 +56,34 @@ export default function Dashboard() {
       }
 
       try {
-        // Fetch forms and stats in parallel from backend (service_role — correct data)
         const [formsResponse, statsResponse] = await Promise.all([
           formsApi.getAll(),
           submissionsApi.getStats(),
         ])
 
         const formsData = formsResponse.data || []
-        setRecentForms(formsData.slice(0, 4))
+        setRecentForms(formsData.slice(0, 5))
 
-        const stats = statsResponse.data || {}
+        const s = statsResponse.data || {}
         setStats({
-          totalForms: stats.totalForms ?? formsData.length,
-          totalSubmissions: stats.totalSubmissions ?? 0,
-          submissionsToday: stats.submissionsToday ?? 0,
-          submissionsThisMonth: stats.submissionsThisMonth ?? 0,
+          totalForms: s.totalForms ?? formsData.length,
+          totalSubmissions: s.totalSubmissions ?? 0,
+          submissionsToday: s.submissionsToday ?? 0,
+          submissionsThisMonth: s.submissionsThisMonth ?? 0,
         })
-        // Add a text preview from submission data for each activity item
-        const activity = (stats.recentActivity || []).map(item => ({
+
+        const activity = (s.recentActivity || []).map((item) => ({
           ...item,
-          preview: Object.values(item.data || {}).find(v => typeof v === 'string' && v.trim().length > 2) || null
+          preview:
+            Object.values(item.data || {}).find(
+              (v) => typeof v === "string" && v.trim().length > 2
+            ) || null,
         }))
         setRecentActivity(activity)
       } catch (error) {
-        console.error("Failed to fetch dashboard data:", error)
+        if (import.meta.env.DEV) {
+          console.error("Failed to load the register:", error)
+        }
         setStats({
           totalForms: 0,
           totalSubmissions: 0,
@@ -63,6 +91,7 @@ export default function Dashboard() {
           submissionsThisMonth: 0,
         })
         setRecentForms([])
+        setRecentActivity([])
       } finally {
         setLoading(false)
       }
@@ -72,200 +101,206 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border/40">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-display">
-              Welcome back, {user?.name?.split(' ')[0] || "Admin"}
-            </h1>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Engine Online
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Overview of form submissions and endpoint delivery performance.
+          <h1 className="font-display text-2xl font-semibold tracking-tight">
+            Inbound register
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Every submission recorded against your endpoints.
           </p>
         </div>
-        <Button asChild size="default" className="shadow-sm shadow-primary/20">
-          <Link to="/forms/create" className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Form
+        <Button asChild>
+          <Link to="/forms/create">
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New endpoint
           </Link>
         </Button>
-      </div>
+      </header>
 
-      {/* Stats Bento Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Active Forms"
-          value={stats.totalForms}
-          icon={FileText}
-          accent="primary"
-          loading={loading}
-        />
-        <StatsCard
-          title="Total Submissions"
-          value={stats.totalSubmissions}
-          icon={Inbox}
-          accent="emerald"
-          loading={loading}
-        />
-        <StatsCard
-          title="Today"
-          value={stats.submissionsToday}
-          description="new leads"
-          icon={BarChart3}
-          accent="sky"
-          loading={loading}
-        />
-        <StatsCard
-          title="This Month"
-          value={stats.submissionsThisMonth}
-          description="total volume"
-          icon={BarChart3}
-          accent="amber"
-          loading={loading}
-        />
-      </div>
+      {/* ── Figures: one ruled band, one number leading ─────────────────── */}
+      <section aria-labelledby="figures-heading">
+        <h2 id="figures-heading" className="sr-only">
+          Submission figures
+        </h2>
+        <div className="ledger-sheet grid grid-cols-2 gap-px overflow-hidden bg-border sm:grid-cols-4">
+          <StatsCard
+            title="Total submissions"
+            value={stats.totalSubmissions}
+            icon={Inbox}
+            emphasis
+            loading={loading}
+            className="bg-card"
+          />
+          <StatsCard
+            title="Endpoints"
+            value={stats.totalForms}
+            loading={loading}
+            className="bg-card"
+          />
+          <StatsCard
+            title="Today"
+            value={stats.submissionsToday}
+            description="since midnight"
+            loading={loading}
+            className="bg-card"
+          />
+          <StatsCard
+            title="This month"
+            value={stats.submissionsThisMonth}
+            description="calendar month"
+            loading={loading}
+            className="bg-card"
+          />
+        </div>
+      </section>
 
-      {/* Recent Activity */}
-      {recentForms.length > 0 && (
-        <div className="bezel-card p-5 border-border/80">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
-            <div>
-              <h2 className="text-base font-bold font-display tracking-tight">Live Inbound Feed</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Real-time incoming submissions across all forms</p>
+      {/* ── The artifact: what actually arrived ─────────────────────────── */}
+      <section aria-labelledby="inbound-heading">
+        <div className="ledger-sheet">
+          <div className="ledger-head">
+            <div className="flex items-baseline gap-2">
+              <h2 id="inbound-heading" className="font-display text-sm font-semibold">
+                Inbound record
+              </h2>
+              {!loading && recentActivity.length > 0 && (
+                <span className="ledger-label">{recentActivity.length} latest</span>
+              )}
             </div>
-            {recentActivity.length > 0 && (
-              <Button variant="ghost" size="sm" asChild className="text-xs text-muted-foreground hover:text-foreground">
-                <Link to="/submissions">
-                  View all submissions
-                  <ArrowRight className="h-3.5 w-3.5 ml-1" />
-                </Link>
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+              <Link to="/submissions">
+                Open inbox
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
           </div>
+
           {loading ? (
-            <div className="space-y-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-12 rounded-lg bg-muted/60 animate-pulse" />
+            <ul className="divide-y divide-border">
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="px-3 py-3.5">
+                  <div className="h-4 w-1/2 animate-pulse rounded-sm bg-muted" aria-hidden="true" />
+                </li>
               ))}
-            </div>
+            </ul>
           ) : recentActivity.length > 0 ? (
-            <div className="divide-y divide-border/40">
+            <ul className="divide-y divide-border">
               {recentActivity.map((item) => (
-                <div key={item.id} className="flex items-center gap-3.5 py-3 hover:bg-muted/40 px-2 rounded-lg transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-primary">
-                    <Inbox className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      <span className="text-foreground font-semibold">{item.form_name}</span>
-                      {item.preview && <span className="text-muted-foreground font-normal"> — {truncate(item.preview, 70)}</span>}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">{timeAgo(item.created_at)}</span>
-                </div>
+                <li key={item.id}>
+                  <Link
+                    to="/submissions"
+                    className="flex items-center gap-4 px-3 py-3 transition-colors hover:bg-accent/40"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="font-mono text-[13px] font-medium text-primary">
+                          {item.form_name || "unknown"}
+                        </span>
+                        {item.preview && (
+                          <span className="truncate text-sm text-muted-foreground">
+                            {truncate(item.preview, 80)}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                      {timeAgo(item.created_at)}
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </div>
+            </ul>
           ) : (
-            <div className="text-center py-8 px-4 border border-dashed border-border/60 rounded-lg bg-muted/20">
-              <Inbox className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
-              <p className="text-sm font-medium text-foreground">Awaiting incoming submissions</p>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                Submissions sent to any of your active endpoints will immediately appear here in real time.
+            <div className="px-4 py-10 text-center">
+              <Inbox className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden="true" />
+              <p className="mt-2 text-sm font-medium">No submissions recorded yet</p>
+              <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+                Anything posted to one of your endpoints appears here within a
+                second, and forwards to whichever channels you have configured.
               </p>
             </div>
           )}
         </div>
-      )}
+      </section>
 
-      {/* Recent Forms / Quickstart Guide */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold font-display">
-            {recentForms.length > 0 ? "Your Forms" : "Getting Started"}
-          </h2>
+      {/* ── Endpoints ───────────────────────────────────────────────────── */}
+      <section aria-labelledby="endpoints-heading">
+        <div className="mb-3 flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            <h2 id="endpoints-heading" className="font-display text-lg font-semibold">
+              Endpoints
+            </h2>
+            {!loading && recentForms.length > 0 && (
+              <span className="ledger-label">
+                {formatNumber(stats.totalForms)} total
+              </span>
+            )}
+          </div>
           {recentForms.length > 0 && (
             <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
               <Link to="/forms">
                 View all
-                <ArrowRight className="h-4 w-4 ml-1" />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </Button>
           )}
         </div>
+
         {loading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="h-36 rounded-lg bg-muted animate-pulse"
-              />
+          <div className="ledger-sheet divide-y divide-border">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="px-3 py-4">
+                <div className="h-8 w-2/3 animate-pulse rounded-sm bg-muted" aria-hidden="true" />
+              </div>
             ))}
           </div>
         ) : recentForms.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {recentForms.map((form) => (
-              <FormCard key={form.id} form={form} />
-            ))}
+          <div className="ledger-sheet overflow-hidden">
+            <ul role="list">
+              {recentForms.map((form) => (
+                <FormCard key={form.id} form={form} />
+              ))}
+            </ul>
           </div>
         ) : (
-          <div className="bezel-card p-6 sm:p-8 border-border/80 bg-gradient-to-b from-card to-muted/20">
-            <div className="max-w-2xl">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20 mb-3">
-                Zero Configuration Required
-              </span>
-              <h3 className="text-xl sm:text-2xl font-bold tracking-tight font-display mb-2">
-                Your Self-Hosted Form Engine is Ready
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                Connect any contact form, newsletter signup, or registration modal from your website without writing backend code.
-              </p>
+          <div className="ledger-sheet p-5">
+            <p className="text-sm font-medium">No endpoints yet</p>
+            <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
+              An endpoint is the address your forms post to. Three steps and
+              you are receiving.
+            </p>
 
-              <div className="grid gap-3 sm:grid-cols-3 mb-6">
-                <div className="p-4 rounded-lg border border-border/60 bg-background/50">
-                  <div className="w-7 h-7 rounded-md bg-primary/10 text-primary font-mono text-xs font-bold flex items-center justify-center mb-2">
-                    1
-                  </div>
-                  <h4 className="text-xs font-semibold mb-1">Create Endpoint</h4>
-                  <p className="text-[11px] text-muted-foreground">Generate a unique endpoint URL for your project.</p>
-                </div>
-                <div className="p-4 rounded-lg border border-border/60 bg-background/50">
-                  <div className="w-7 h-7 rounded-md bg-primary/10 text-primary font-mono text-xs font-bold flex items-center justify-center mb-2">
-                    2
-                  </div>
-                  <h4 className="text-xs font-semibold mb-1">Embed in HTML</h4>
-                  <p className="text-[11px] text-muted-foreground">Set <code className="text-primary font-mono">&lt;form action=&quot;...&quot;&gt;</code> or submit via JS fetch.</p>
-                </div>
-                <div className="p-4 rounded-lg border border-border/60 bg-background/50">
-                  <div className="w-7 h-7 rounded-md bg-primary/10 text-primary font-mono text-xs font-bold flex items-center justify-center mb-2">
-                    3
-                  </div>
-                  <h4 className="text-xs font-semibold mb-1">Receive Leads</h4>
-                  <p className="text-[11px] text-muted-foreground">Stream submissions directly to email, Telegram, Discord, or Slack.</p>
-                </div>
-              </div>
+            {/* A procedure, not three equal feature tiles. */}
+            <ol className="mt-5 divide-y divide-border border-y border-border">
+              {EMPTY_STEPS.map((step, i) => (
+                <li key={step.title} className="flex gap-3 py-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-muted font-mono text-[11px] text-muted-foreground">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium">{step.title}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {step.body}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button asChild size="default" className="shadow-sm shadow-primary/20">
-                  <Link to="/forms/create" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Create Your First Form
-                  </Link>
-                </Button>
-                <Button variant="outline" size="default" asChild>
-                  <Link to="/account">
-                    Configure Email (SMTP)
-                  </Link>
-                </Button>
-              </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button asChild>
+                <Link to="/forms/create">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Create your first endpoint
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/account">Configure delivery</Link>
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 }

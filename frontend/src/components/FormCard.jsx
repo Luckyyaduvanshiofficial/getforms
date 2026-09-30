@@ -4,8 +4,7 @@
 
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { MoreVertical, Trash2, ExternalLink, Copy, FileText } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Copy, ExternalLink, MoreHorizontal, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,180 +23,139 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { formatDate, formatNumber } from "@/lib/utils"
+import StatusStamp from "@/components/StatusStamp"
+import { formatNumber, timeAgo } from "@/lib/utils"
 import { PUBLIC_BASE_URL as API_BASE_URL } from "@/lib/api"
 
-// Deterministic color from tag string
-const TAG_COLORS = [
-  "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
-  "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800",
-  "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-  "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
-  "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800",
-  "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800",
-]
-function tagColor(tag) {
-  let hash = 0
-  for (let i = 0; i < tag.length; i++) hash = tag.charCodeAt(i) + ((hash << 5) - hash)
-  return TAG_COLORS[Math.abs(hash) % TAG_COLORS.length]
-}
-
-export default function FormCard({ form, onDelete, showActions = false, onTagClick }) {
+/*
+ * An endpoint row in the register.
+ *
+ * Previously a floating card in a grid: every endpoint given equal area
+ * regardless of importance, a rounded-2xl shell around three lines of text,
+ * a pulsing status dot with no label, and a clickable tag <span> that the
+ * keyboard could never reach.
+ *
+ * Rows read faster and align into columns. The navigation link and the row
+ * actions are siblings rather than nested, because a button inside an anchor
+ * is invalid and breaks the keyboard path.
+ *
+ * Renders an <li>; the parent supplies the <ul> and the ruled container.
+ */
+export default function FormCard({ form, onDelete, showActions = false }) {
   const [deleteOpen, setDeleteOpen] = useState(false)
-
   const [copied, setCopied] = useState(false)
 
-  const handleCopyEndpoint = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleCopyEndpoint = () => {
     if (!form?.endpoint) return
-    navigator.clipboard.writeText(`${API_BASE_URL}/f/${form.endpoint}`)
+    navigator.clipboard?.writeText(`${API_BASE_URL}/f/${form.endpoint}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleDeleteClick = (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDeleteOpen(true)
-  }
+  const isActive = form.active !== false
+  const count = form.submissionCount ?? form.submission_count ?? 0
+  const created = form.createdAt || form.created_at
 
   return (
-    <>
-    <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete form</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete <strong>{form.name}</strong>? This will permanently remove the form and all its submissions.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            onClick={() => onDelete?.()}
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    <Link to={`/forms/${form.id}`} className="block group">
-      <Card className="bezel-card bezel-card-hover overflow-hidden border-border/80 h-full flex flex-col justify-between">
-        <CardContent className="p-5 flex flex-col flex-1">
-          {/* Top row: Icon + Name + Actions */}
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-primary group-hover:scale-105 transition-transform">
-                <FileText className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-bold text-sm font-display truncate group-hover:text-primary transition-colors">
-                  {form.name}
-                </h3>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${form.active !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
-                  <span className="text-[11px] font-mono text-muted-foreground truncate">
-                    /f/{form.endpoint}
+    <li className="group relative flex items-start gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 hover:bg-accent/40 focus-within:bg-accent/40">
+      <Link
+        to={`/forms/${form.id}`}
+        className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-mono text-[13px] font-medium text-primary">
+            /f/{form.endpoint}
+          </span>
+          <span className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="truncate text-sm text-foreground">{form.name}</span>
+            {form.tags?.length > 0 && (
+              <span className="flex shrink-0 items-center gap-1">
+                {form.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-sm border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                  >
+                    {tag}
                   </span>
-                </div>
-              </div>
-            </div>
+                ))}
+              </span>
+            )}
+          </span>
+        </span>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Quick Copy Button */}
-              <button
-                type="button"
-                onClick={handleCopyEndpoint}
-                title="Copy submission URL"
-                className="h-7 px-2 rounded-md bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground text-[11px] font-mono border border-border/50 flex items-center gap-1 transition-colors"
+        <span className="flex shrink-0 items-center gap-4">
+          <StatusStamp status={isActive ? "active" : "paused"} />
+          <span className="w-16 text-end font-mono text-xs tabular-nums text-muted-foreground">
+            {formatNumber(count)}
+            <span className="sr-only"> submissions</span>
+          </span>
+          <span className="hidden w-20 text-end text-xs text-muted-foreground md:inline">
+            {created ? timeAgo(created) : "—"}
+          </span>
+        </span>
+      </Link>
+
+      <div className="flex shrink-0 items-center">
+        {showActions && form.can_manage !== false && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                aria-label={`Actions for ${form.name}`}
               >
-                <Copy className="h-3 w-3" />
-                <span>{copied ? "Copied" : "Copy"}</span>
-              </button>
-
-              {showActions && form.can_manage !== false && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleCopyEndpoint}>
-                      <Copy className="mr-2 h-4 w-4" />
-                      Copy Endpoint
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <a
-                        href={`${API_BASE_URL}/f/${form.endpoint}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Open Hosted Form
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleDeleteClick}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          {form.description ? (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-              {form.description}
-            </p>
-          ) : (
-            <div className="mb-2" />
-          )}
-
-          {/* Tags */}
-          {form.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-4 mt-auto">
-              {form.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer ${tagColor(tag)}`}
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTagClick?.(tag) }}
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={handleCopyEndpoint}>
+                <Copy className="me-2 h-4 w-4" aria-hidden="true" />
+                {copied ? "Endpoint copied" : "Copy endpoint"}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a
+                  href={`${API_BASE_URL}/f/${form.endpoint}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
+                  <ExternalLink className="me-2 h-4 w-4" aria-hidden="true" />
+                  Open hosted form
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setDeleteOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="me-2 h-4 w-4" aria-hidden="true" />
+                Delete endpoint
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
 
-          {/* Footer counts */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/40 mt-auto">
-            <span className="font-semibold text-foreground tabular-nums">
-              {formatNumber(form.submissionCount || 0)} <span className="text-muted-foreground font-normal">submissions</span>
-            </span>
-            <span className="text-[11px] font-mono">
-              {form.createdAt || form.created_at
-                ? formatDate(form.createdAt || form.created_at)
-                : "—"}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-    </>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete “{form.name}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the endpoint and every submission recorded
+              against it ({formatNumber(count)} so far). This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep endpoint</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => onDelete?.()}
+            >
+              Delete permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </li>
   )
 }
