@@ -5,12 +5,24 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
+/*
+ * Field boundaries are square and explicit: a record is written on a ruled line.
+ * text-base on small screens kills iOS Safari's focus zoom; sm:text-sm restores
+ * the intended desktop size. Never use maximum-scale to suppress it.
+ */
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {
   return (
     <input
       type={type}
       className={cn(
-        "flex h-9 w-full rounded-md border border-border/60 bg-transparent px-3 py-2 text-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-foreground/30 focus-visible:ring-1 focus-visible:ring-foreground/10 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-9 w-full rounded-sm border border-input bg-card px-2.5 py-1 text-base text-foreground transition-colors",
+        "sm:text-sm",
+        "placeholder:text-muted-foreground/70",
+        "hover:border-muted-foreground/40",
+        "focus-visible:border-ring",
+        "disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60",
+        "aria-[invalid=true]:border-destructive",
+        "file:border-0 file:bg-transparent file:font-medium file:text-foreground",
         className
       )}
       ref={ref}
