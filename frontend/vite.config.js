@@ -14,12 +14,15 @@ export default defineConfig(({ mode: _mode }) => ({
     port: 5174,
     proxy: {
       '/api': 'http://localhost:3001',
-      '/f':   'http://localhost:3001',
+      // Anchored to /f/ so it does not swallow the SPA routes /forms and
+      // /forms/create. A bare '/f' prefix proxies those to the backend, which
+      // serves the stale production index.html and leaves the page blank.
+      '^/f/': 'http://localhost:3001',
     },
   },
   build: {
     minify: 'esbuild', // Use esbuild (faster) instead of terser
-    target: 'es2015',
+    target: 'es2020',
   },
   esbuild: {
     legalComments: 'none',
