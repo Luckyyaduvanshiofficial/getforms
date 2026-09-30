@@ -290,28 +290,23 @@ export default function CreateForm() {
           <Sparkles className="h-3.5 w-3.5 text-primary" />
           Quick Start Presets (Optional)
         </Label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+        <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => {
-            const Icon = p.icon
             const isSelected = activePreset === p.id
             return (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => applyPreset(p)}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                aria-pressed={isSelected}
+                className={`rounded-sm border px-2.5 py-1.5 text-start transition-colors ${
                   isSelected
-                    ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
-                    : "border-border/70 hover:border-border hover:bg-muted/40 bg-card"
+                    ? "border-primary bg-primary/10"
+                    : "border-input bg-card hover:bg-accent"
                 }`}
               >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${
-                  isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="text-xs font-semibold truncate text-foreground">{p.name}</div>
-                <div className="text-[10px] text-muted-foreground truncate mt-0.5">{p.description}</div>
+                <span className="block text-xs font-medium text-foreground">{p.name}</span>
+                <span className="block text-[10px] text-muted-foreground">{p.description}</span>
               </button>
             )
           })}
@@ -320,8 +315,8 @@ export default function CreateForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Main Card: Basic Configuration */}
-        <Card className="bezel-card border-border/80 shadow-sm">
-          <CardHeader className="pb-4 border-b border-border/40">
+        <Card>
+          <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-base font-bold font-display">Basic Information</CardTitle>
             <CardDescription className="text-xs">
               Essential endpoint identifier and friendly title
@@ -374,7 +369,7 @@ export default function CreateForm() {
                       value={customSlug}
                       onChange={(e) => setCustomSlug(slugify(e.target.value))}
                       placeholder="my-contact-form"
-                      className="flex-1 px-3 py-2 text-xs font-mono bg-transparent focus:outline-none text-foreground"
+                      className="flex-1 bg-transparent px-2 py-1.5 font-mono text-xs text-foreground"
                     />
                   </div>
                   <p className="text-[10px] text-muted-foreground mt-1.5">
@@ -385,7 +380,7 @@ export default function CreateForm() {
 
               {/* Real-Time Live URL Preview */}
               <div className="pt-1 flex items-center gap-2 text-xs font-mono text-muted-foreground">
-                <span className="text-[10px] uppercase font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                <span className="ledger-label rounded-sm border border-border bg-muted px-1.5 py-0.5">
                   Target URL
                 </span>
                 <span className="truncate text-foreground font-semibold">
@@ -427,29 +422,31 @@ export default function CreateForm() {
         </Card>
 
         {/* Advanced Options Accordion */}
-        <div className="border border-border/80 rounded-2xl bg-card overflow-hidden">
+        <div className="overflow-hidden rounded-md border border-border bg-card">
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
-            className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors"
+            aria-expanded={showAdvanced}
+            aria-controls="advanced-options"
+            className="flex w-full items-center justify-between px-4 py-3 text-start transition-colors hover:bg-accent/40"
           >
             <div>
-              <div className="text-sm font-bold font-display flex items-center gap-2 text-foreground">
-                Advanced Form Options
+              <div className="font-display flex items-center gap-2 text-sm font-semibold text-foreground">
+                Advanced options
                 <span className="text-[11px] font-normal text-muted-foreground">
-                  (Notifications, Auto-Reply, Redirects, Spam, Files)
+                  Notifications, auto-reply, redirects, spam, files
                 </span>
               </div>
             </div>
             {showAdvanced ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              <ChevronUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
             )}
           </button>
 
           {showAdvanced && (
-            <div className="p-6 pt-2 border-t border-border/40">
+            <div id="advanced-options" className="border-t border-border p-4">
               <Tabs defaultValue="notifications" className="space-y-5">
                 <TabsList className="grid grid-cols-4 w-full">
                   <TabsTrigger value="notifications" className="text-xs">
@@ -599,7 +596,7 @@ export default function CreateForm() {
                             value={formData.autoReplyBody}
                             onChange={handleChange}
                             rows={4}
-                            className="w-full px-3 py-2 text-xs rounded-lg border border-border/80 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            className="w-full rounded-sm border border-input bg-card px-2 py-1.5 text-base sm:text-xs"
                           />
                         </div>
                       </div>
@@ -618,7 +615,7 @@ export default function CreateForm() {
                       name="spamEngine"
                       value={formData.spamEngine}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-border/80 bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      className="w-full rounded-sm border border-input bg-card px-2 py-1.5 text-base sm:text-sm"
                     >
                       <option value="honeypot">Invisible Honeypot (Built-in Zero Setup)</option>
                       <option value="turnstile">Cloudflare Turnstile</option>

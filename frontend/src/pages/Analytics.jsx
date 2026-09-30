@@ -34,6 +34,7 @@ import {
   Loader2,
   AlertCircle,
   BarChart3,
+  Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -373,7 +374,7 @@ export default function Analytics() {
               <AlertCircle className="h-12 w-12 text-destructive" />
               <p className="text-destructive text-center">{error}</p>
               <Button onClick={() => fetchAnalytics()}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
                 Try Again
               </Button>
             </div>
@@ -398,16 +399,15 @@ export default function Analytics() {
         <Card>
           <CardContent className="py-12">
             <div className="flex flex-col items-center gap-4">
-              <BarChart3 className="h-16 w-16 text-muted-foreground" />
-              <h3 className="text-xl font-semibold">No forms yet</h3>
-              <p className="text-muted-foreground text-center max-w-md">
-                Create your first form to start seeing analytics! Once you have
-                forms and submissions, you&apos;ll see charts and statistics here.
+              <h3 className="font-display text-lg font-semibold">No endpoints yet</h3>
+              <p className="max-w-md text-center text-sm text-muted-foreground">
+                Analytics appear once an endpoint exists and submissions start
+                arriving. Create one to begin.
               </p>
               <Button asChild>
                 <Link to="/forms/create">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Form
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Create endpoint
                 </Link>
               </Button>
             </div>
@@ -419,19 +419,18 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground mt-0.5">
-            Track your form performance and submissions
+          <h1 className="font-display text-2xl font-semibold tracking-tight">Analytics</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Submission volume and endpoint performance.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
+                <Calendar className="h-4 w-4" aria-hidden="true" />
                 {TIME_RANGES.find((r) => r.value === timeRange)?.label}
               </Button>
             </DropdownMenuTrigger>
@@ -439,9 +438,16 @@ export default function Analytics() {
               {TIME_RANGES.map((range) => (
                 <DropdownMenuItem
                   key={range.value}
-                  onClick={() => setTimeRange(range.value)}
+                  onSelect={() => setTimeRange(range.value)}
                   className={cn(timeRange === range.value && "bg-accent")}
                 >
+                  <Check
+                    className={cn(
+                      "me-2 h-3.5 w-3.5",
+                      timeRange === range.value ? "opacity-100" : "opacity-0"
+                    )}
+                    aria-hidden="true"
+                  />
                   {range.label}
                 </DropdownMenuItem>
               ))}
@@ -450,19 +456,21 @@ export default function Analytics() {
           <Button
             variant="outline"
             size="icon"
+            aria-label="Refresh analytics"
             onClick={() => fetchAnalytics(true)}
             disabled={isRefreshing}
           >
             <RefreshCw
               className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+              aria-hidden="true"
             />
           </Button>
           <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Export CSV
           </Button>
         </div>
-      </div>
+      </header>
 
       {/* Stats Cards */}
       {isLoading ? (

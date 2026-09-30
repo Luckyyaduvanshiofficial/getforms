@@ -37,69 +37,86 @@ export default function Setup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-2">
-            <span className="text-4xl font-bold tracking-tight" style={{ fontFamily: 'Chillax, sans-serif', fontWeight: 700 }}>GetForms</span>
-          </div>
-          <p className="text-muted-foreground mt-1 text-sm">Create your account to get started</p>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-6">
+          <span className="font-display text-2xl font-semibold tracking-tight">GetForms</span>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create the administrator account for this instance.
+          </p>
         </div>
 
-        <div className="bg-card border rounded-xl p-6 shadow-sm">
+        <div className="ledger-sheet p-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium block mb-1">Username</label>
+              <label htmlFor="setup-username" className="mb-1.5 block text-xs font-medium">
+                Username
+              </label>
               <input
+                id="setup-username"
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                placeholder="e.g. admin"
+                placeholder="admin"
                 required
-                autoFocus
                 autoComplete="username"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                className="w-full rounded-sm border border-input bg-card px-2.5 py-2 text-base sm:text-sm"
               />
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1">Password</label>
+              <label htmlFor="setup-password" className="mb-1.5 block text-xs font-medium">
+                Password
+              </label>
               <input
+                id="setup-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Min. 8 characters"
+                placeholder="At least 8 characters"
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                className="w-full rounded-sm border border-input bg-card px-2.5 py-2 text-base sm:text-sm"
               />
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1">Confirm password</label>
+              <label htmlFor="setup-confirm" className="mb-1.5 block text-xs font-medium">
+                Confirm password
+              </label>
               <input
+                id="setup-confirm"
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirm(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Repeat the password"
                 required
                 autoComplete="new-password"
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-background"
+                className="w-full rounded-sm border border-input bg-card px-2.5 py-2 text-base sm:text-sm"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+              <p
+                role="alert"
+                className="rounded-sm border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-xs text-destructive"
+              >
+                {error}
+              </p>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              className="w-full rounded-sm bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? 'Creating account…' : 'Create account'}
+              {loading ? "Creating account" : "Create account"}
             </button>
           </form>
         </div>
+
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          This account owns every endpoint on the instance.
+        </p>
       </div>
     </div>
   )

@@ -16,12 +16,13 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import StatsCard from "@/components/StatsCard"
 import SubmissionTable from "@/components/SubmissionTable"
 import CodeSnippet from "@/components/CodeSnippet"
 import EmailTemplateEditor from "@/components/EmailTemplateEditor"
+import StatusStamp from "@/components/StatusStamp"
 import { QRCodeSVG } from "qrcode.react"
 import { formatDate } from "@/lib/utils"
 import { formsApi, submissionsApi, PUBLIC_BASE_URL as API_BASE_URL } from "@/lib/api"
@@ -264,78 +265,79 @@ export default function FormDetails() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
-        <div className="flex items-center gap-3.5">
-          <Button variant="ghost" size="icon" asChild className="rounded-xl h-9 w-9">
+      <header className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild aria-label="Back to endpoints">
             <Link to="/forms">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-display">{form.name}</h1>
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${form.active !== false ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-muted text-muted-foreground'}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${form.active !== false ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground'}`} />
-                {form.active !== false ? "Active Endpoint" : "Paused"}
-              </span>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="font-display text-2xl font-semibold tracking-tight">{form.name}</h1>
+              <StatusStamp status={form.active !== false ? "active" : "paused"} />
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
               Created {form.createdAt || form.created_at ? formatDate(form.createdAt || form.created_at) : "—"}
             </p>
           </div>
         </div>
-
-        {form.can_manage !== false && (
-          <Button variant="outline" asChild className="rounded-lg shadow-xs">
-            <Link to={`/forms/${id}/settings`} className="gap-2">
-              <Settings className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link to={`/forms/${id}/settings`}>
+              <Settings className="h-4 w-4" aria-hidden="true" />
               Settings
             </Link>
           </Button>
-        )}
-      </div>
+        </div>
+      </header>
 
-      {/* Form Endpoint Card */}
-      <Card className="bezel-card border-border/80 shadow-sm overflow-hidden">
-        <CardHeader className="pb-3 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-bold font-display">Target Endpoint URL</CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">Use this URL in your HTML form action or JavaScript fetch request</p>
-            </div>
-            {copied && (
-              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-                Copied to clipboard!
-              </span>
-            )}
+      {/* Endpoint */}
+      <Card className="overflow-hidden">
+        <CardHeader className="flex-row items-baseline justify-between gap-3 border-b border-border pb-3">
+          <div>
+            <CardTitle>Endpoint URL</CardTitle>
+            <CardDescription>
+              Use this as your HTML <code className="font-mono">action</code>, or POST to it directly.
+            </CardDescription>
           </div>
+          <span role="status" className="text-xs font-medium text-status-resolved">
+            {copied ? "Copied" : ""}
+          </span>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center bg-muted/50 border border-border/70 rounded-xl px-3.5 py-2 font-mono text-sm overflow-hidden">
-              <span className="text-primary font-semibold text-xs uppercase px-1.5 py-0.5 rounded bg-primary/10 mr-2.5 flex-shrink-0">POST</span>
-              <span className="truncate select-all text-foreground">{API_BASE_URL}/f/{form.endpoint}</span>
+            <div className="flex flex-1 items-center overflow-hidden rounded-sm border border-input bg-muted px-2.5 py-2">
+              <span className="me-2.5 shrink-0 rounded-sm bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-primary">
+                POST
+              </span>
+              <span className="truncate font-mono text-sm select-all text-foreground">{API_BASE_URL}/f/{form.endpoint}</span>
             </div>
             <Button
               variant="outline"
               size="icon"
-              className="rounded-xl h-10 w-10 border-border/80"
+              aria-label="Copy endpoint URL"
               onClick={handleCopyEndpoint}
-              title="Copy endpoint URL"
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 border-border/80" asChild title="Open hosted form">
+            <Button variant="outline" size="icon" asChild aria-label="Open hosted form in a new tab">
               <a
                 href={`${API_BASE_URL}/f/${form.endpoint}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
               </a>
             </Button>
-            <Button variant="outline" size="icon" className="rounded-xl h-10 w-10 border-border/80" onClick={() => setShowQr((v) => !v)} title="Toggle QR code">
-              <QrCode className="h-4 w-4" />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowQr((v) => !v)}
+              aria-label="Toggle QR code"
+              aria-expanded={showQr}
+            >
+              <QrCode className="h-4 w-4" aria-hidden="true" />
             </Button>
           </div>
           {showQr && (
@@ -358,24 +360,25 @@ export default function FormDetails() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="ledger-sheet grid grid-cols-1 gap-px overflow-hidden bg-border sm:grid-cols-3">
         <StatsCard
-          title="Total Submissions"
+          title="Total submissions"
           value={stats?.total || 0}
-          accent="primary"
+          emphasis
           loading={loading}
+          className="bg-card"
         />
         <StatsCard
-          title="This Week"
+          title="This week"
           value={stats?.thisWeek || 0}
-          accent="emerald"
           loading={loading}
+          className="bg-card"
         />
         <StatsCard
           title="Today"
           value={stats?.today || 0}
-          accent="sky"
           loading={loading}
+          className="bg-card"
         />
       </div>
 
