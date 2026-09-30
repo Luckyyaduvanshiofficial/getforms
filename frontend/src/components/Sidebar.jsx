@@ -10,9 +10,8 @@ import {
   LogOut,
   Plus,
   BarChart3,
-  UserCircle,
-  ChevronRight,
   Inbox,
+  Settings2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,12 +19,21 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useUnread } from "@/contexts/UnreadContext"
 import ThemeToggle from "@/components/ThemeToggle"
 
+/*
+ * Navigation is an instrument rail, not a 256px sidebar.
+ * The data reclaims the width the old chrome was spending.
+ *
+ * Desktop: a fixed left rail with stacked icon + label.
+ * Mobile:  a fixed bottom bar, so primary navigation sits in the thumb zone
+ *          instead of behind a hamburger.
+ */
+
 const navItems = [
   { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/forms", icon: FileText, label: "Forms" },
-  { to: "/submissions", icon: Inbox, label: "Submissions", showUnread: true },
+  { to: "/submissions", icon: Inbox, label: "Inbox", showUnread: true },
   { to: "/analytics", icon: BarChart3, label: "Analytics" },
-  { to: "/account", icon: UserCircle, label: "Settings" },
+  { to: "/account", icon: Settings2, label: "Account" },
 ]
 
 export default function Sidebar() {
@@ -34,107 +42,153 @@ export default function Sidebar() {
   const { unreadCount } = useUnread()
 
   const initials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-    : user?.email?.[0]?.toUpperCase() || '?'
+    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || "?"
+
+  const railItem = ({ isActive }) =>
+    cn(
+      "group relative flex w-full flex-col items-center justify-center gap-1 rounded-sm px-1 py-2.5 text-[10px] font-medium leading-none transition-colors",
+      isActive
+        ? "bg-accent text-accent-foreground"
+        : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+    )
+
+  const barItem = ({ isActive }) =>
+    cn(
+      "relative flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-medium leading-none transition-colors",
+      isActive ? "text-primary" : "text-muted-foreground"
+    )
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-background/95 backdrop-blur-md border-r border-border/70 z-30">
-      <div className="flex flex-col flex-1 min-h-0">
-        {/* Brand Header */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border/40">
-          <NavLink to="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-                <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-              </svg>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl font-bold tracking-tight font-display">
-                GetForms
-              </span>
-              <span className="font-mono text-[10px] font-medium text-muted-foreground/70 px-1.5 py-0.5 rounded-md bg-muted/60 border border-border/40">
-                v2.0
-              </span>
-            </div>
+    <>
+      {/* ── Desktop: left instrument rail ───────────────────────────────── */}
+      <nav
+        aria-label="Primary"
+        className="fixed inset-y-0 start-0 z-30 hidden w-[72px] flex-col border-e border-border bg-card md:flex"
+      >
+        <NavLink
+          to="/dashboard"
+          className="flex h-14 items-center justify-center border-b border-border"
+          aria-label="GetForms, go to dashboard"
+        >
+          <span className="flex h-8 w-8 items-center justify-center rounded-sm border border-primary/40 bg-primary/10 text-primary">
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+              <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+            </svg>
+          </span>
+        </NavLink>
+
+        <div className="flex flex-1 flex-col items-stretch gap-0.5 p-1.5">
+          {navItems.map((item) => (
+            <NavLink key={item.to} to={item.to} className={railItem} title={item.label}>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-y-1.5 start-0 w-[2px] rounded-full bg-primary"
+                    />
+                  )}
+                  <span className="relative">
+                    <item.icon className="h-4 w-4" aria-hidden="true" />
+                    {item.showUnread && unreadCount > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -end-2 -top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] font-semibold text-primary-foreground"
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-center">
+                    {item.label}
+                    {item.showUnread && unreadCount > 0 && (
+                      <span className="sr-only">, {unreadCount} unread</span>
+                    )}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+
+          <NavLink
+            to="/forms/create"
+            title="New form"
+            className="mt-2 flex flex-col items-center justify-center gap-1 rounded-sm border border-primary/40 bg-primary/10 px-1 py-2.5 text-[10px] font-medium leading-none text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span>New</span>
           </NavLink>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          <div className="space-y-1">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
-                    isActive
-                      ? "bg-primary/10 text-primary border border-primary/20 dark:bg-primary/15 dark:border-primary/25"
-                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground border border-transparent"
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 transition-transform group-hover:scale-110" />
-                <span className="flex-1">{item.label}</span>
-                {item.showUnread && unreadCount > 0 && (
-                  <span className="ml-auto min-w-[20px] h-[20px] flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1.5 shadow-xs">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </NavLink>
-            ))}
-          </div>
-
-          {/* Button-in-Button "New Form" CTA */}
-          <div className="pt-4 px-1">
-            <NavLink
-              to="/forms/create"
-              className="group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/95 shadow-sm shadow-primary/25 transition-all duration-200 active:scale-[0.98]"
-            >
-              <span>New Form</span>
-              <div className="w-5 h-5 rounded-md bg-white/20 dark:bg-black/20 flex items-center justify-center group-hover:rotate-90 transition-transform duration-200">
-                <Plus className="h-3.5 w-3.5" />
-              </div>
-            </NavLink>
-          </div>
-        </nav>
-
-        {/* Bottom Profile & Utilities */}
-        <div className="p-3 border-t border-border/50 bg-muted/20">
+        <div className="flex flex-col items-center gap-1 border-t border-border p-1.5">
+          <ThemeToggle iconOnly className="w-full" />
           <NavLink
             to="/account"
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-muted transition-colors cursor-pointer group mb-1"
+            className="flex w-full flex-col items-center gap-1 rounded-sm px-1 py-2 text-[10px] text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+            title={user?.name ? `${user.name}, account` : "Account"}
           >
-            <div className="relative">
-              <Avatar className="h-8 w-8 rounded-lg border border-border/80">
-                <AvatarFallback className="text-xs font-semibold rounded-lg bg-muted text-foreground">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-background" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate leading-tight">{user?.name || "Admin"}</p>
-              <p className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">{user?.email || "admin@getform.local"}</p>
-            </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-40 group-hover:opacity-100 transition-opacity" />
+            <Avatar className="h-6 w-6 rounded-sm border border-border">
+              <AvatarFallback className="rounded-sm bg-muted font-mono text-[10px] text-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="max-w-full truncate">Account</span>
           </NavLink>
-
-          <div className="flex items-center gap-1.5 pt-1">
-            <ThemeToggle className="flex-1 justify-start h-8 text-xs text-muted-foreground hover:text-foreground" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              onClick={() => { logout(); navigate('/login') }}
-            >
-              <LogOut className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Sign out"
+            onClick={() => { logout(); navigate("/login") }}
+          >
+            <LogOut className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
-      </div>
-    </aside>
+      </nav>
+
+      {/* ── Mobile: bottom bar in the thumb zone ────────────────────────── */}
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        {navItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={barItem}>
+            {({ isActive }) => (
+              <>
+                <span className="relative">
+                  <item.icon className="h-5 w-5" aria-hidden="true" />
+                  {item.showUnread && unreadCount > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -end-2 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] font-semibold text-primary-foreground"
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </span>
+                <span>
+                  {item.label}
+                  {item.showUnread && unreadCount > 0 && (
+                    <span className="sr-only">, {unreadCount} unread</span>
+                  )}
+                  {isActive && <span className="sr-only"> (current)</span>}
+                </span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+    </>
   )
 }

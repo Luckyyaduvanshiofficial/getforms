@@ -31,18 +31,61 @@ import { Toaster } from "@/components/ui/toaster"
 import { UnreadProvider } from "@/contexts/UnreadContext"
 import { ThemeProvider } from "@/contexts/ThemeContext"
 
+const ROUTE_TITLES = {
+  "/dashboard": "Dashboard",
+  "/forms": "Forms",
+  "/forms/create": "New form",
+  "/submissions": "Inbox",
+  "/analytics": "Analytics",
+  "/account": "Account",
+  "/settings": "Settings",
+  "/login": "Sign in",
+  "/setup": "Set up",
+}
+
+/*
+ * Client-side navigation changes the screen and tells nobody: focus stays put
+ * and a screen reader announces nothing at all. We retitle the document and
+ * move focus to the new view's heading, which is the sanctioned fix.
+ */
+function RouteAnnouncer() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const isFormDetail =
+      location.pathname.startsWith("/forms/") && location.pathname !== "/forms/create"
+    const base = isFormDetail ? "Form detail" : ROUTE_TITLES[location.pathname]
+    document.title = base ? `${base} · GetForms` : "GetForms"
+
+    const heading = document.querySelector("main h1")
+    if (heading) {
+      heading.setAttribute("tabindex", "-1")
+      heading.focus({ preventScroll: true })
+    }
+  }, [location.pathname])
+
+  return null
+}
+
 function DashboardLayout() {
   return (
     <UnreadProvider>
-      <div className="min-h-screen bg-background relative overflow-x-hidden selection:bg-primary/20">
-        {/* Subtle ambient lighting in dark mode */}
-        <div className="pointer-events-none fixed inset-0 z-0 opacity-40 dark:opacity-100 hidden dark:block">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-gradient-to-b from-primary/10 via-primary/5 to-transparent blur-3xl" />
-        </div>
+      <div className="min-h-screen bg-background">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-50 focus:rounded-sm focus:border focus:border-border focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:font-medium"
+        >
+          Skip to content
+        </a>
+
         <Sidebar />
         <Header />
-        <main className="md:pl-64 relative z-10">
-          <div className="p-4 md:p-8 max-w-7xl mx-auto">
+
+        <main
+          id="main-content"
+          className="pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0 md:ps-[72px]"
+        >
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8">
             <Outlet />
           </div>
         </main>
@@ -96,23 +139,30 @@ function SetupGuard({ children }) {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span role="status" className="sr-only">Loading</span>
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"
+          aria-hidden="true"
+        />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center space-y-3">
-          <p className="text-sm font-medium text-foreground">Cannot connect to backend</p>
-          <p className="text-xs text-muted-foreground">Make sure the server is running, then refresh the page.</p>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="ledger-sheet w-full max-w-sm space-y-3 p-6 text-center">
+          <h1 className="font-display text-base font-semibold">Cannot reach the server</h1>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            GetForms could not complete its startup check. Confirm the backend is
+            running, then reload this page.
+          </p>
           <button
             onClick={() => window.location.reload()}
-            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            className="rounded-sm border border-input bg-card px-3 py-1.5 text-xs font-medium hover:bg-accent"
           >
-            Retry
+            Reload
           </button>
         </div>
       </div>
@@ -128,8 +178,12 @@ function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span role="status" className="sr-only">Loading</span>
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"
+          aria-hidden="true"
+        />
       </div>
     )
   }
@@ -147,8 +201,12 @@ function PublicRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <span role="status" className="sr-only">Loading</span>
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary"
+          aria-hidden="true"
+        />
       </div>
     )
   }
@@ -159,8 +217,9 @@ function PublicRoute({ children }) {
 function App() {
   return (
     <ThemeProvider>
-    <BrowserRouter>
-      <Toaster />
+      <BrowserRouter>
+        <RouteAnnouncer />
+        <Toaster />
       <SetupGuard>
         <Routes>
           <Route path="/setup" element={<Setup />} />
