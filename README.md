@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ GetForms — Modern Open-Source Form Backend & Form-to-Email Service
+# GetForms — Modern Open-Source Form Backend & Form-to-Email Service
 
 **The lightweight, high-performance, developer-first alternative to Formspree, Basin, FormBee, and Formcarry.**  
 *Add one action attribute to any HTML form and receive instant submissions. Free self-hosted & free managed cloud.*
